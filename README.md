@@ -1,2 +1,1 @@
 # gimbal_thesis
-echo
