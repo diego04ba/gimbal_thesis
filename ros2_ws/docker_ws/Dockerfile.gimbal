@@ -11,5 +11,3 @@ RUN apt update -y && apt install -y \
     ros-jazzy-rqt-graph \
     ros-jazzy-example-interfaces \
     && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /root/ros_workspace
