@@ -1,10 +1,11 @@
 FROM ros:jazzy
 
 # Install basic tools and ROS dependencies
-RUN apt update -y && apt install -y \
+RUN sudo apt update -y && sudo apt install -y \
     python3-pip \
     python3-opencv \
     python3-numpy \
+    ros-jazzy-cv-bridge \
     wget \
     usbutils \
     ros-jazzy-turtlesim* \

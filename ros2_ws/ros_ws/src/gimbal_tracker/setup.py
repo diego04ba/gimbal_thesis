@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'gimbal_trackerù'
+package_name = 'gimbal_tracker'
 
 setup(
     name=package_name,
@@ -11,7 +11,8 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=['setuptools'],
+    install_requires=[ \
+        'setuptools', 'rclpy', 'sensor_msgs', 'geometry_msgs', 'cv_bridge'],
     zip_safe=True,
     maintainer='root',
     maintainer_email='root@todo.todo',
@@ -24,10 +25,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'aruco_node = gimbal_tracker.aruco_node:main'
-            'gimbal_node = gimbal_tracker.gimbal_node:main'
-            'control_node = gimbal_tracker.control_node:main'
-            'camera_node = gimbal_tracker.camera_node:main'
+            'aruco_detector = gimbal_tracker.aruco_detector:main',
+            'camera_node = gimbal_tracker.camera_node:main',
         ],
     },
 )
