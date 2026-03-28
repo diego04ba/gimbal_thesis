@@ -12,3 +12,5 @@ RUN sudo apt update -y && sudo apt install -y \
     ros-jazzy-rqt-graph \
     ros-jazzy-example-interfaces \
     && rm -rf /var/lib/apt/lists/*
+
+    RUN pip3 install --no-cache-dir --break-system-packages opencv-contrib-python-headless==4.8.0.74 --no-deps

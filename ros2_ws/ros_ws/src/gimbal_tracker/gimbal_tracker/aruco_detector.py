@@ -19,6 +19,9 @@ class ArucoNode(Node):
         self.aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_50)
         self.parameters = aruco.DetectorParameters()
 
+        # Specific ID to follow (for example, ID 1)
+        self.target_id = 1 # change this to the ID you want to track
+
         # Creating Bridge 
         self.br = CvBridge()
 
@@ -28,45 +31,66 @@ class ArucoNode(Node):
             '/image',
             self.image_callback,
             10)
+        self.subscription  # prevent unused variable warning
         
         # Publisher to publish the position error
         self.publisher_ = self.create_publisher(Point, '/position', 10)
         
-        self.get_logger().info('Aruco Node initialized and waiting for images...')
+        self.get_logger().info(f'Aruco Node initialized. Tracking target ID: {self.target_id}')
 
     # Creating the function to process the frames everytime the node gets one
     def image_callback(self, msg):
-            # Convert ROS Image message to OpenCV format
+        try:
+            # 1. Conversioon of the ROS Image message to OpenCV format
             cv_image = self.br.imgmsg_to_cv2(msg, desired_encoding='bgr8')
-
-            # Detect ArUco markers in the frame
-            corners, ids, _ = aruco.detectMarkers(cv_image, self.aruco_dict, parameters=self.parameters)
             
+            # 2. Dinamically get the dimensions of the frame to calculate the center (Setpoint)
+            height, width = cv_image.shape[:2]
+            
+            # Exact center of the frame (Setpoint for the gimbal)
+            frame_center_x = width / 2.0
+            frame_center_y = height / 2.0
+
+            # 3. Grey conversion for better ArUco detection
+            gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
+
+            # 4. ArUco Marker Detection
+            corners, ids, _ = aruco.detectMarkers(gray, self.aruco_dict, parameters=self.parameters)
+
             if ids is not None:
-                # Iterate through detected markers and finding a specific one (ID: 1)
-                for i in range(len(ids)):
-                    if ids[i] == 1:  # Replace 1 with the ID of the marker to track
-                        corner = corners[i]
-                        # Calculate the center of the detected marker
-                        center_x = int(corner[0][:, 0].mean())
-                        center_y = int(corner[0][:, 1].mean())
-                        
-                        # Create a Point message to publish the position error
-                        position_error = Point()
-                        position_error.x = float(center_x - (cv_image.shape[1] / 2))  # Error in x-axis
-                        position_error.y = float(center_y - (cv_image.shape[0] / 2))  # Error in y-axis
-                        position_error.z = 0.0  # Assuming a 2D plane, could use it later if needed
+                # Flatten the ID array for easier searching
+                ids_flat = ids.flatten()
 
-                        # Publish the position error
-                        self.publisher_.publish(position_error)
+                # Check if the target ID is among the detected markers
+                if self.target_id in ids_flat:
+                    # Find the index of the target ID to get its corresponding corners
+                    idx = list(ids_flat).index(self.target_id)
+                    marker_corners = corners[idx][0]
 
-                        # Draw a circle at the center of the detected marker for visualization
-                        cv2.circle(cv_image, (center_x, center_y), 5, (0, 255, 0), -1)
-            
-            # Display the processed image with detected markers (only if needed)
-            cv2.imshow('Aruco Detection', cv_image)
-            cv2.waitKey(1)
+                    # 5. Calculation of the marker center (in pixel coordinates)
+                    marker_center_x = float(marker_corners[:, 0].mean())
+                    marker_center_y = float(marker_corners[:, 1].mean())
 
+                    # 6. Calculation of the error (Distance between marker center and frame center)
+                    # If the error is 0, the marker is perfectly centered
+                    error_x = marker_center_x - frame_center_x
+                    error_y = marker_center_y - frame_center_y
+
+                    # 7. Publishing the Point message
+                    error_msg = Point()
+                    error_msg.x = error_x
+                    error_msg.y = error_y
+                    error_msg.z = 0.0  # We can use Z for future distance (marker area)
+                    
+                    self.publisher_.publish(error_msg)
+
+                    # Logging the error for debugging purposes
+                    self.get_logger().info(f'TARGET ID {self.target_id} - Error X: {error_x:.2f}, Y: {error_y:.2f}')
+                else:
+                    self.get_logger().info(f'Marker ID {self.target_id} not found.', once=False)
+
+        except Exception as e:
+            self.get_logger().error(f'Error in callback: {str(e)}')
 
 def main(args=None):
     rclpy.init(args=args)
