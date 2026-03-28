@@ -12,7 +12,7 @@ class CameraNode(Node):
         # Webcam Laptop: 0
         # Smartphone IP Webcam: "http://192.168.1.202:8080/video"
         # Smartphone localhost with IP Webcam: "http://host.docker.internal:8080/video"
-        self.source = "http://host.docker.internal:8080/video" 
+        self.source = 0  # Change this to your desired source
         
         self.cap = cv2.VideoCapture(self.source)
         self.br = CvBridge()
@@ -31,8 +31,8 @@ class CameraNode(Node):
         if ret:
             # --- DEBUG SECTION (Comment this out later) ---
             # This shows a local window to confirm the connection
-            # cv2.imshow("Camera Debugger", frame)
-            # cv2.waitKey(1) 
+            cv2.imshow("Camera Debugger", frame)
+            cv2.waitKey(1) 
             # ----------------------------------------------
 
             # Convert the OpenCV frame to ROS Image message and publish it
