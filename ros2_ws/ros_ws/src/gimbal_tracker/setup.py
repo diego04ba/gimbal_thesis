@@ -1,3 +1,5 @@
+import os
+from glob import glob
 from setuptools import find_packages, setup
 
 package_name = 'gimbal_tracker'
@@ -10,6 +12,8 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        (os.path.join('share', package_name, 'launch'), glob(os.path.join('launch', '*launch.[pxy][yma]*'))),
+        (os.path.join('share', package_name, 'media'), glob('media/*.mp4')),
     ],
     install_requires=[ \
         'setuptools', 'rclpy', 'sensor_msgs', 'geometry_msgs', 'cv_bridge'],
@@ -27,6 +31,7 @@ setup(
         'console_scripts': [
             'aruco_detector = gimbal_tracker.aruco_detector:main',
             'camera_node = gimbal_tracker.camera_node:main',
+            'video_sim = gimbal_tracker.video_sim:main',
         ],
     },
 )

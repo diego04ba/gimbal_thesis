@@ -1,1 +1,2 @@
-docker build --rm -t ros:gimbal -f Dockerfile.gimbal .
+cd ..
+docker build --rm -t ros:gimbal -f docker_ws/Dockerfile.gimbal .

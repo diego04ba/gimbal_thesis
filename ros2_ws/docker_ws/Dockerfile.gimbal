@@ -1,16 +1,23 @@
-FROM ros:jazzy
+FROM ros:humble
 
 # Install basic tools and ROS dependencies
-RUN sudo apt update -y && sudo apt install -y \
+RUN apt update -y && apt install -y \
     python3-pip \
     python3-opencv \
     python3-numpy \
-    ros-jazzy-cv-bridge \
+    ros-humble-cv-bridge \
     wget \
     usbutils \
-    ros-jazzy-turtlesim* \
-    ros-jazzy-rqt-graph \
-    ros-jazzy-example-interfaces \
+    ros-humble-turtlesim \
+    ros-humble-rqt-graph \
+    ros-humble-example-interfaces \
     && rm -rf /var/lib/apt/lists/*
 
-    RUN pip3 install --no-cache-dir --break-system-packages opencv-contrib-python-headless==4.8.0.74 --no-deps
+RUN pip3 install --no-cache-dir opencv-contrib-python-headless==4.8.0.74 --no-deps
+
+# Installing Spinnaker SDK dependencies
+RUN if [ ! -d /etc/ros/rosdep/sources.list.d/ ]; then rosdep init; fi && \
+    rosdep update
+COPY ros_ws/src root/ros_workspace/src   
+RUN apt-get update -y && rosdep install -y --from-paths root/ros_workspace/src --ignore-src --rosdistro humble \
+    && rm -rf /var/lib/apt/lists/*
