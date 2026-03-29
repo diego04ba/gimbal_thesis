@@ -36,5 +36,14 @@ def generate_launch_description():
             executable='pid_controller', 
             name='pid_controller',
             output='screen'
+        ),
+
+        # NODE 4: Gimbal Driver  
+        # This node subscribes to the control commands and simulates the gimbal yaw movement
+        Node(
+            package='gimbal_tracker',
+            executable='gimbal_driver', 
+            name='gimbal_driver',
+            output='screen'
         )
     ])

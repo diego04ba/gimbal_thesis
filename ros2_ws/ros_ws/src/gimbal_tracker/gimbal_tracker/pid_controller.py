@@ -9,17 +9,24 @@ class PIDControlNode(Node):
     def __init__(self):
         super().__init__('pid_controller')
 
-        # Declare PID Parameters
+        # Declare PID Parameters:
+        # With some tests using turtlesim, 
+        # I determined good values for the PID gains to start with, 
+        # but they can be tuned in real-time using ROS2 parameters.
+        # Commands to change parameters in real-time (using ros2 param set):
+        # ros2 param set /pid_controller kp_* <float_value>
+        # ros2 param set /pid_controller ki_* <float_value>
+        # ros2 param set /pid_controller kd_* <float_value>
         
         # Pitch (Tilt/Y-axis) PID gains
-        self.declare_parameter('kp_pitch', 0.1)
-        self.declare_parameter('ki_pitch', 0.0)
-        self.declare_parameter('kd_pitch', 0.05)
+        self.declare_parameter('kp_pitch', 0.04) # Proportional gain that gives a good velocity response without too much overshoot
+        self.declare_parameter('ki_pitch', 0.001) # Integral gain that helps eliminate steady-state error, small to avoid instability
+        self.declare_parameter('kd_pitch', 0.005) # Derivative gain that helps dampen the response and reduce overshoot, small to avoid noise amplification
 
         # Yaw (Pan/Z-axis) PID gains
-        self.declare_parameter('kp_yaw', 0.1)
-        self.declare_parameter('ki_yaw', 0.0)
-        self.declare_parameter('kd_yaw', 0.05)
+        self.declare_parameter('kp_yaw', 0.04)
+        self.declare_parameter('ki_yaw', 0.001)
+        self.declare_parameter('kd_yaw', 0.005)
 
         # State Variables for PID calculations
         self.integral_pitch = 0.0
@@ -110,7 +117,9 @@ class PIDControlNode(Node):
         control_yaw = p_yaw + i_yaw + d_yaw
 
         # Considering the Gimbal limits, we can modify this next line.
-        # control_yaw = max(min(control_yaw, MAX_SPEED), -MAX_SPEED)
+        MAX_SPEED = 2.0
+        control_yaw = max(min(control_yaw, MAX_SPEED), -MAX_SPEED)
+        control_pitch = max(min(control_pitch, MAX_SPEED), -MAX_SPEED)
 
         # Publish the control signal
         control_msg = Twist()

@@ -32,6 +32,7 @@ setup(
             'aruco_detector = gimbal_tracker.aruco_detector:main',
             'camera_node = gimbal_tracker.camera_node:main',
             'video_sim = gimbal_tracker.video_sim:main',
+            'turtle_aruco_sim = gimbal_tracker.turtle_aruco_sim:main',
             'pid_controller = gimbal_tracker.pid_controller:main',
             'gimbal_driver = gimbal_tracker.gimbal_driver:main',
         ],
