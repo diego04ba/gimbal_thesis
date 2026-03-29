@@ -1,4 +1,18 @@
-# Using the SimpleBGC (SBGC) Protocol to interface with the BGC 2.2 gimbal controller.
+# ==============================================================================
+# Gimbal Driver Node for BGC 2.2 (Firmware 2.2b2 - 8-bit AlexMos)
+# 
+# PRIMARY INTERFACE (Current): 
+# Overriding setpoints via USB/Serial using the SimpleBGC (SBGC) Binary Protocol.
+# CMD_CONTROL ('C') is used to send speed commands.
+# CMD_REALTIME_DATA ('D') is used to request IMU angles.
+#
+# SECONDARY INTERFACE (Fallback):
+# If the 8-bit MCU struggles with serial buffer latency during USB override,
+# control can be routed through an external MCU (e.g., Arduino) acting as a relay,
+# converting the ROS 2 Twist commands into standard PWM signals fed into the 
+# BGC's RC inputs (RC_ROLL, RC_PITCH).
+# ==============================================================================
+
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
@@ -60,15 +74,99 @@ class GimbalDriver(Node):
                 self.feedback_pub.publish(feedback_msg)
 
     def send_sbgc_control(self, pitch, yaw):
-        # Pack the control command into the SBGC protocol format and send it over serial.
-        # Header ($), ID (C), Size, Checksum, Payload...
-        # Note: BGC 2.2 8-bit requires specific binary framing
-        pass 
+        # Convert Float ROS to Int16 for SBGC
+        # Using a multiplier to convert PID output to a suitable range for the BGC
+        # Tuning may be required
+        multiplier = 100.0
+
+        pitch_speed = int(pitch * multiplier)
+        yaw_speed = int(yaw * multiplier) 
+
+        # Construct SBGC CMD_CONTROL Payload
+        # Mode: 2 (Speed mode), Speed/Angle for Roll (not used), Pitch, Yaw
+        payload = struct.pack('<B h h h h h h', 
+                              2, # Mode: Speed mode
+                              0, # Roll speed (not used)
+                              0, #  Roll angle (not used in Speed mode)
+                              pitch_speed,
+                                0, # Pitch angle 
+                                 yaw_speed,
+                                 0 # Yaw angle
+                                 )
+        
+        # Checksum calculation
+        cmd_id = 67 # 'C' for CMD_CONTROL
+        payload_size = len(payload)
+        header_checksum = (cmd_id + payload_size) % 256
+        payload_checksum = sum(payload) % 256
+
+        # Assemble the final packet
+        packet = struct.pack('<c B B B', b'>', cmd_id, payload_size, header_checksum) + payload + struct.pack('<B', payload_checksum)
+        
+        # Send the packet over serial
+        try:
+            self.ser.write(packet)
+        except Exception as e:
+            self.get_logger().error(f"Failed to send control command: {e}")
 
     def read_sbgc_feedback(self):
-        # Parse the serial buffer to extract the current pitch and yaw angles from the BGC's feedback.
-        # Logic to read serial buffer and extract IMU angles
-        return None # Placeholder
+        # Send request for real-time data (CMD_REALTIME_DATA)
+        cmd_id = 68 # 'D' for CMD_REALTIME_DATA
+        request_packet = struct.pack('<c B B B B', b'>', cmd_id, 0, cmd_id %256, 0)
+
+        try:
+            self.ser.write(request_packet)
+        except Exception as e:
+            self.get_logger().debug(f"Write error: {e}")
+            return None
+        
+        # Read and parse the response
+        if self.ser.in_waiting >= 4:
+            # Syncronization: Search for the start byte '>'
+            if self.ser.read() == b'>':
+                # Reads Header
+                resp_cmd = self.ser.read()[0]
+                resp_size = self.ser.read()[0]
+                resp_hdr_chk = self.ser.read()[0]
+
+                # Verify Header Checksum
+                if (resp_cmd + resp_size) % 256 == resp_hdr_chk:
+                    # Reads Payload and Final Checksum
+                    payload = self.ser.read(resp_size)
+                    payload_chk = self.ser.read()[0]
+
+                    # Verify Checksum of Payload
+                    if sum(payload) % 256 == payload_chk:
+                        
+                        # Extraction of Angles
+                        # Attention: The offsets for Pitch and Yaw in the payload may vary based on the BGC firmware version and configuration.
+                        try: 
+                            # Uncomment the line below the first time you run the node.
+                            # Move the Gimbal by hand up and down: watch which bytes change in the terminal.
+                            # That will be your offset for the Pitch. Then do the same to the right/left for the Yaw.
+                            
+                            # self.get_logger().info(f"Payload length: {len(payload)} | Data: {payload.hex()}")
+
+                            # Assume offset values for older 8-bit boards (e.g., 22 and 24).
+                            # 'h' means signed 16-bit integer. '<' means Little-Endian.
+                            # Change 22 and 24 to the correct values you discover through debugging or the manual.
+                            pitch_raw = struct.unpack_from('<h', payload, offset=22)[0]
+                            yaw_raw = struct.unpack_from('<h', payload, offset=24)[0]
+                            
+                            # BGC board maps angles with a resolution of 0.02197265625 degrees per unit
+                            # (This value is derived from 360 degrees / 16384)
+                            pitch_deg = pitch_raw * 0.02197265625
+                            yaw_deg = yaw_raw * 0.02197265625
+                            
+                            return {'pitch': pitch_deg, 'yaw': yaw_deg}
+                            
+                        except struct.error as e:
+                            # If we get the offset wrong or the packet is shorter than expected,
+                            # struct raises an error. We ignore it to prevent the node from crashing.
+                            self.get_logger().debug(f"Error extracting angles (Wrong offset?): {e}")
+                            pass
+        
+        return None
 
 def main(args=None):
     rclpy.init(args=args)
