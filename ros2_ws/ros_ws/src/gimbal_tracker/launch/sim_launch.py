@@ -27,5 +27,14 @@ def generate_launch_description():
             executable='aruco_detector', 
             name='aruco_processor',
             output='screen'
+        ),
+
+        # NODE 3: PID Controller
+        # This node subscribes to the ArUco detection results and computes control commands
+        Node(
+            package='gimbal_tracker',
+            executable='pid_controller', 
+            name='pid_controller',
+            output='screen'
         )
     ])
