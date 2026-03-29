@@ -11,7 +11,11 @@ def generate_launch_description():
     flir_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(spinnaker_dir, 'launch', 'driver_node.launch.py')
-        )
+        ),
+        # Arguments: can add camera_type as an argument also.
+        launch_arguments={
+            'serial': "'20435008'" 
+        }.items()
     )
 
     # Node 2: ArUco Detector
