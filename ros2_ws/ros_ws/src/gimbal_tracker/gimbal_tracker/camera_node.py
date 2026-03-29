@@ -29,12 +29,6 @@ class CameraNode(Node):
         ret, frame = self.cap.read()
         
         if ret:
-            # --- DEBUG SECTION (Comment this out later) ---
-            # This shows a local window to confirm the connection
-            # cv2.imshow("Camera Debugger", frame)
-            # cv2.waitKey(1) 
-            # ----------------------------------------------
-
             # Convert the OpenCV frame to ROS Image message and publish it
             msg = self.br.cv2_to_imgmsg(frame, encoding="bgr8")
             self.publisher_.publish(msg)
