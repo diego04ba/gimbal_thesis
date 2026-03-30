@@ -48,7 +48,7 @@ class GimbalDriver(Node):
         self.timer = self.create_timer(0.1, self.request_feedback_callback)
 
     def control_callback(self, msg):
-        # It receives Pitch (y) and Yaw (z)from the PID controller and sends them to the BGC.
+        # It receives Pitch (y) and Yaw (z) from the PID controller and sends them to the BGC.
         if self.ser and self.ser.is_open:
             # Prepare SBGC CMD_CONTROL packet
             # Mode: 2 (Speed mode), Data: Pitch speed, Yaw speed

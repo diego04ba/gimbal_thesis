@@ -1,6 +1,7 @@
 # PID Controller Node for Gimbal Tracking:
 # it receives pixel error from ArUco detector and angle feedback from the Gimbal,
 # and computes the necessary speed/angle correction to center the target.
+import math
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Point, Twist
@@ -116,15 +117,24 @@ class PIDControlNode(Node):
         d_yaw = kd_yaw * ((error_yaw - self.prev_error_yaw) / dt)
         control_yaw = p_yaw + i_yaw + d_yaw
 
-        # Considering the Gimbal limits, we can modify this next line.
-        MAX_SPEED = 2.0
+        # To avoid overshooting and to keep the control signal within reasonable limits, we can clamp the output to a maximum speed.
+        MAX_SPEED = 1.0
         control_yaw = max(min(control_yaw, MAX_SPEED), -MAX_SPEED)
         control_pitch = max(min(control_pitch, MAX_SPEED), -MAX_SPEED)
+        # Imlementing the Anti-Windup structure for the integral term,
+        # When the control detects from the feedback that the gimbal has reached its physical limit,
+        # it resets the integral term to prevent it from accumulating further and causing overshoot when the target moves back within range.
+        # I need to determine the physical limits of the gimbal in terms of pitch and yaw angles, for now I'll use some reasonable assumptions based on typical gimbal capabilities. 
+        # These limits can be adjusted based on the actual hardware specifications.
+        PITCH_LIMIT = math.radians(60.0)
+        YAW_LIMIT = math.radians(120.0)
+        if self.current_pitch_angle >= PITCH_LIMIT or self.current_pitch_angle <= -PITCH_LIMIT:
+            self.integral_pitch = 0.0
+        if self.current_yaw_angle >= YAW_LIMIT or self.current_yaw_angle <= -YAW_LIMIT:
+            self.integral_yaw = 0.0 
 
         # Publish the control signal
         control_msg = Twist()
-        # Ensure mapping matches the GimbalDriver expectation: 
-        # GimbalDriver uses msg.x for Yaw and msg.y for Pitch
         control_msg.angular.x = 0.0   
         control_msg.angular.y = control_pitch 
         control_msg.angular.z = control_yaw
