@@ -26,3 +26,9 @@ RUN apt-get update -y && rosdep install -y --from-paths root/ros_workspace/src -
 RUN apt-get update -y && apt-get install -y \
     python3-serial \
     && rm -rf /var/lib/apt/lists/*
+
+# Source ROS workspace
+RUN echo "source /opt/ros/humble/setup.bash" >> /root/.bashrc && \
+    echo "if [ -f /root/ros_workspace/install/setup.bash ]; then source /root/ros_workspace/install/setup.bash; fi" >> /root/.bashrc
+
+WORKDIR /root/ros_workspace
