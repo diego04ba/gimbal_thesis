@@ -121,6 +121,7 @@ class PIDControlNode(Node):
         MAX_SPEED = 1.0
         control_yaw = max(min(control_yaw, MAX_SPEED), -MAX_SPEED)
         control_pitch = max(min(control_pitch, MAX_SPEED), -MAX_SPEED)
+
         # Imlementing the Anti-Windup structure for the integral term,
         # When the control detects from the feedback that the gimbal has reached its physical limit,
         # it resets the integral term to prevent it from accumulating further and causing overshoot when the target moves back within range.
@@ -128,10 +129,15 @@ class PIDControlNode(Node):
         # These limits can be adjusted based on the actual hardware specifications.
         PITCH_LIMIT = math.radians(60.0)
         YAW_LIMIT = math.radians(120.0)
-        if self.current_pitch_angle >= PITCH_LIMIT or self.current_pitch_angle <= -PITCH_LIMIT:
+        if abs(self.current_pitch_angle) >= PITCH_LIMIT:
             self.integral_pitch = 0.0
-        if self.current_yaw_angle >= YAW_LIMIT or self.current_yaw_angle <= -YAW_LIMIT:
-            self.integral_yaw = 0.0 
+            if (self.current_pitch_angle * control_pitch) > 0:
+                control_pitch = 0.0 # Stop pitch movement if it's trying to move further in the same direction as the current pitch angle
+
+        if abs(self.current_yaw_angle) >= YAW_LIMIT:
+            self.integral_yaw = 0.0
+            if (self.current_yaw_angle * control_yaw) > 0:
+                control_yaw = 0.0 # Stop yaw movement if it's trying to move further in the same direction as the current yaw angle
 
         # Publish the control signal
         control_msg = Twist()
