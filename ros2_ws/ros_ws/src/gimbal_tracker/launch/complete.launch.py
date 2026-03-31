@@ -41,7 +41,8 @@ def generate_launch_description():
         package='gimbal_tracker',
         executable='gimbal_driver',
         name='gimbal_driver',
-        output='screen'
+        output='screen',
+        parameters=[{'serial_port': '/dev/ttyUSB0', 'baud_rate': 115200}]
     )
 
     return LaunchDescription([

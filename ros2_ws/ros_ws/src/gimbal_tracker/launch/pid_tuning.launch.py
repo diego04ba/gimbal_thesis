@@ -17,7 +17,7 @@ def generate_launch_description():
             output='screen'
         ),
 
-        # TutleSim ArUco Simulation 
+        # TurtleSim ArUco Simulation 
         Node(
             package='gimbal_tracker',
             executable='turtle_aruco_sim', 

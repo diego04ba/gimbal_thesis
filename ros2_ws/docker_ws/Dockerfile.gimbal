@@ -31,4 +31,5 @@ RUN apt-get update -y && apt-get install -y \
 RUN echo "source /opt/ros/humble/setup.bash" >> /root/.bashrc && \
     echo "if [ -f /root/ros_workspace/install/setup.bash ]; then source /root/ros_workspace/install/setup.bash; fi" >> /root/.bashrc
 
+# Running the container in ros_ws directory
 WORKDIR /root/ros_workspace

@@ -41,9 +41,10 @@ def generate_launch_description():
         # NODE 4: Gimbal Driver  
         # This node subscribes to the control commands and simulates the gimbal yaw movement
         Node(
-            package='gimbal_tracker',
-            executable='gimbal_driver', 
-            name='gimbal_driver',
-            output='screen'
-        )
+        package='gimbal_tracker',
+        executable='gimbal_driver',
+        name='gimbal_driver',
+        output='screen',
+        parameters=[{'serial_port': '/dev/ttyUSB0', 'baud_rate': 115200}]
+    )
     ])
