@@ -76,7 +76,7 @@ class GimbalDriver(Node):
     def send_sbgc_control(self, pitch, yaw):
         # Convert Float ROS to Int16 for SBGC
         # Using a multiplier to convert PID output to a suitable range for the BGC
-        # Tuning may be required
+        # Tuning may be required if too slow or too fast.
         multiplier = 100.0
 
         pitch_speed = int(pitch * multiplier)
@@ -84,15 +84,16 @@ class GimbalDriver(Node):
 
         # Construct SBGC CMD_CONTROL Payload
         # Mode: 2 (Speed mode), Speed/Angle for Roll (not used), Pitch, Yaw
-        payload = struct.pack('<B h h h h h h', 
-                              2, # Mode: Speed mode
+        payload = struct.pack(
+                              '<Bhhhhhh', # 13 bytes total
+                              2, # Mode: Speed mode 
                               0, # Roll speed (not used)
                               0, #  Roll angle (not used in Speed mode)
                               pitch_speed,
-                                0, # Pitch angle 
-                                 yaw_speed,
-                                 0 # Yaw angle
-                                 )
+                              0, # Pitch angle 
+                              yaw_speed,
+                              0 # Yaw angle
+                              )
         
         # Checksum calculation
         cmd_id = 67 # 'C' for CMD_CONTROL

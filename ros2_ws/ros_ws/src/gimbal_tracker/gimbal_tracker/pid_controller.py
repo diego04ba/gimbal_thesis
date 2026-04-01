@@ -128,7 +128,8 @@ class PIDControlNode(Node):
         # I need to determine the physical limits of the gimbal in terms of pitch and yaw angles, for now I'll use some reasonable assumptions based on typical gimbal capabilities. 
         # These limits can be adjusted based on the actual hardware specifications.
         PITCH_LIMIT = math.radians(60.0)
-        YAW_LIMIT = math.radians(120.0)
+        YAW_LIMIT = math.radians(100.0)
+        # This limits were found on the ModalAI's technical documentation for the BGC, but they can be further tuned based on real-world testing and the specific gimbal model used.
         if abs(self.current_pitch_angle) >= PITCH_LIMIT:
             self.integral_pitch = 0.0
             if (self.current_pitch_angle * control_pitch) > 0:
