@@ -102,7 +102,7 @@ class GimbalDriver(Node):
         payload_checksum = sum(payload) % 256
 
         # Assemble the final packet
-        packet = struct.pack('<c B B B', b'>', cmd_id, payload_size, header_checksum) + payload + struct.pack('<B', payload_checksum)
+        packet = struct.pack('<cBBB', b'>', cmd_id, payload_size, header_checksum) + payload + struct.pack('<B', payload_checksum)
         
         # Send the packet over serial
         try:
@@ -113,7 +113,7 @@ class GimbalDriver(Node):
     def read_sbgc_feedback(self):
         # Send request for real-time data (CMD_REALTIME_DATA)
         cmd_id = 68 # 'D' for CMD_REALTIME_DATA
-        request_packet = struct.pack('<c B B B B', b'>', cmd_id, 0, cmd_id %256, 0)
+        request_packet = struct.pack('<cBBBB', b'>', cmd_id, 0, cmd_id %256, 0)
 
         try:
             self.ser.write(request_packet)
