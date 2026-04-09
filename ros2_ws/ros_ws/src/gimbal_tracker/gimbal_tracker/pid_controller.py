@@ -126,16 +126,17 @@ class PIDControlNode(Node):
         error_yaw = msg.x    # Positive X error means target is to the right
 
         # Implementing Clamping for the integral term to prevent windup when the gimbal is near its physical limits.
-        # Implementing Deadband for the error to prevent the controller from reacting to very small errors.
         ROLL_INFERIOR_LIMIT = math.radians(-30.0)
         ROLL_SUPERIOR_LIMIT = math.radians(30.0)
         PITCH_INFERIOR_LIMIT = math.radians(-60.0)
         PITCH_SUPERIOR_LIMIT = math.radians(60.0)
         YAW_INFERIOR_LIMIT = math.radians(-100.0)
         YAW_SUPERIOR_LIMIT = math.radians(100.0)
+        # Implementing Deadband for the error to prevent the controller from reacting to very small errors.
+        DEADBAND = 5.0 # pixels
 
         # --- ROLL (X-axis) PID Calculation ---
-        if abs(error_roll) < 5.0: # Deadband of 5 pixels for roll
+        if abs(error_roll) < DEADBAND: # Deadband
             error_roll = 0.0
         p_roll = kp_roll * error_roll
         i_roll = ki_roll * self.integral_roll
@@ -146,7 +147,7 @@ class PIDControlNode(Node):
         control_roll = p_roll + i_roll + d_roll
 
         # --- PITCH (Y-axis) PID Calculation ---
-        if abs(error_pitch) < 5.0: # Deadband of 5 pixels for pitch
+        if abs(error_pitch) < DEADBAND:
             error_pitch = 0.0
         p_pitch = kp_pitch * error_pitch
         i_pitch = ki_pitch * self.integral_pitch
@@ -157,7 +158,7 @@ class PIDControlNode(Node):
         control_pitch = p_pitch + i_pitch + d_pitch
 
         # --- YAW (Z-axis) PID Calculation ---
-        if abs(error_yaw) < 5.0: # Deadband of 5 pixels for yaw
+        if abs(error_yaw) < DEADBAND:
             error_yaw = 0.0
         p_yaw = kp_yaw * error_yaw
         i_yaw = ki_yaw * self.integral_yaw
