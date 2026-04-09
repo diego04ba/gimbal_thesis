@@ -13,6 +13,8 @@
 # BGC's RC inputs (RC_ROLL, RC_PITCH).
 # ==============================================================================
 
+import math
+
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
@@ -48,11 +50,11 @@ class GimbalDriver(Node):
         self.timer = self.create_timer(0.1, self.request_feedback_callback)
 
     def control_callback(self, msg):
-        # It receives Pitch (y) and Yaw (z) from the PID controller and sends them to the BGC.
+        # It receives Roll (x), Pitch (y) and Yaw (z) from the PID controller and sends them to the BGC.
         if self.ser and self.ser.is_open:
             # Prepare SBGC CMD_CONTROL packet
-            # Mode: 2 (Speed mode), Data: Pitch speed, Yaw speed
-            self.send_sbgc_control(pitch=msg.angular.y, yaw=msg.angular.z)
+            # Mode: 2 (Speed mode), Data: Roll speed, Pitch speed, Yaw speed
+            self.send_sbgc_control(roll=msg.angular.x, pitch=msg.angular.y, yaw=msg.angular.z)
 
     def request_feedback_callback(self):
         # Informing the PID controller about the current angles of the gimbal by reading from the BGC and publishing to /feedback topic.
@@ -63,22 +65,23 @@ class GimbalDriver(Node):
             
             if current_angles:
                 feedback_msg = Twist()
-                feedback_msg.angular.x = 0.0
-                feedback_msg.angular.y = current_angles['pitch']
-                feedback_msg.angular.z = current_angles['yaw']
-                
+                feedback_msg.angular.x = math.radians(current_angles['roll'])
+                feedback_msg.angular.y = math.radians(current_angles['pitch'])
+                feedback_msg.angular.z = math.radians(current_angles['yaw'])
+
                 feedback_msg.linear.x = 0.0
                 feedback_msg.linear.y = 0.0
                 feedback_msg.linear.z = 0.0
 
                 self.feedback_pub.publish(feedback_msg)
 
-    def send_sbgc_control(self, pitch, yaw):
+    def send_sbgc_control(self, roll, pitch, yaw):
         # Convert Float ROS to Int16 for SBGC
         # Using a multiplier to convert PID output to a suitable range for the BGC
         # Tuning may be required if too slow or too fast.
         multiplier = 100.0
 
+        roll_speed = int(roll * multiplier)
         pitch_speed = int(pitch * multiplier)
         yaw_speed = int(yaw * multiplier) 
 
@@ -87,8 +90,8 @@ class GimbalDriver(Node):
         payload = struct.pack(
                               '<Bhhhhhh', # 13 bytes total
                               2, # Mode: Speed mode 
-                              0, # Roll speed (not used)
-                              0, #  Roll angle (not used in Speed mode)
+                              roll_speed, # Roll speed
+                              0, #  Roll angle 
                               pitch_speed,
                               0, # Pitch angle 
                               yaw_speed,
@@ -148,9 +151,10 @@ class GimbalDriver(Node):
                             
                             # self.get_logger().info(f"Payload length: {len(payload)} | Data: {payload.hex()}")
 
-                            # Assume offset values for older 8-bit boards (e.g., 22 and 24).
+                            # Assume offset values for older 8-bit boards (e.g., 20, 22 and 24).
                             # 'h' means signed 16-bit integer. '<' means Little-Endian.
-                            # Change 22 and 24 to the correct values you discover through debugging or the manual.
+                            # Change 20, 22 and 24 to the correct values you discover through debugging or the manual.
+                            roll_raw = struct.unpack_from('<h', payload, offset=20)[0]
                             pitch_raw = struct.unpack_from('<h', payload, offset=22)[0]
                             yaw_raw = struct.unpack_from('<h', payload, offset=24)[0]
                             
@@ -158,8 +162,9 @@ class GimbalDriver(Node):
                             # (This value is derived from 360 degrees / 16384)
                             pitch_deg = pitch_raw * 0.02197265625
                             yaw_deg = yaw_raw * 0.02197265625
-                            
-                            return {'pitch': pitch_deg, 'yaw': yaw_deg}
+                            roll_deg = roll_raw * 0.02197265625
+
+                            return {'roll': roll_deg, 'pitch': pitch_deg, 'yaw': yaw_deg}
                             
                         except struct.error as e:
                             # If we get the offset wrong or the packet is shorter than expected,

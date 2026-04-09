@@ -18,7 +18,12 @@ class PIDControlNode(Node):
         # ros2 param set /pid_controller kp_* <float_value>
         # ros2 param set /pid_controller ki_* <float_value>
         # ros2 param set /pid_controller kd_* <float_value>
-        
+
+        # Roll (X-axis) PID gains
+        self.declare_parameter('kp_roll', 0.04)
+        self.declare_parameter('ki_roll', 0.001)
+        self.declare_parameter('kd_roll', 0.005)
+
         # Pitch (Tilt/Y-axis) PID gains
         self.declare_parameter('kp_pitch', 0.04) # Proportional gain that gives a good velocity response without too much overshoot
         self.declare_parameter('ki_pitch', 0.001) # Integral gain that helps eliminate steady-state error, small to avoid instability
@@ -30,13 +35,16 @@ class PIDControlNode(Node):
         self.declare_parameter('kd_yaw', 0.005)
 
         # State Variables for PID calculations
+        self.integral_roll = 0.0
         self.integral_pitch = 0.0
         self.integral_yaw = 0.0
+        self.prev_error_roll = 0.0
         self.prev_error_pitch = 0.0
         self.prev_error_yaw = 0.0
         # self.last_time = self.get_clock().now()
 
         # Feedback variables
+        self.current_roll_angle = 0.0
         self.current_pitch_angle = 0.0
         self.current_yaw_angle = 0.0
         self.feedback_received = False
@@ -70,12 +78,21 @@ class PIDControlNode(Node):
 
     def feedback_callback(self, msg):
         # Update current angles from Gimbal feedback
+        self.current_roll_angle = msg.angular.x
         self.current_pitch_angle = msg.angular.y
         self.current_yaw_angle = msg.angular.z
         self.feedback_received = True
 
     def error_callback(self, msg):
         # Calculate PID control output based on the pixel error from ArUco and the current feedback from the Gimbal.
+
+        # In the real application the PID controller will not start calculating control outputs until it has received feedback 
+        # from the gimbal to ensure it has the necessary state information to compute accurate corrections.
+        # Commenting it for simulation purposes, but it should be uncommented in the real application.
+        if self.feedback_received == False:
+            return # Wait until we have received feedback from the gimbal to start controlling
+
+
         # Calculate time difference (dt)
         # -----------------------------------------------------------------
         # current_time = self.get_clock().now()
@@ -90,6 +107,10 @@ class PIDControlNode(Node):
             return
 
         # Fetch current tunable gains
+
+        kp_roll = self.get_parameter('kp_roll').value
+        ki_roll = self.get_parameter('ki_roll').value
+        kd_roll = self.get_parameter('kd_roll').value
         
         kp_pitch = self.get_parameter('kp_pitch').value
         ki_pitch = self.get_parameter('ki_pitch').value
@@ -99,50 +120,82 @@ class PIDControlNode(Node):
         ki_yaw = self.get_parameter('ki_yaw').value
         kd_yaw = self.get_parameter('kd_yaw').value
 
-        # The error is directly the pixel distance from the center (calculated by ArucoNode)
+        # The error is directly the pixel distance from the center
+        error_roll = msg.x   # Positive X error means target is to the right
         error_pitch = msg.y  # Positive Y error means target is below center
         error_yaw = msg.x    # Positive X error means target is to the right
 
+        # Implementing Clamping for the integral term to prevent windup when the gimbal is near its physical limits.
+        # Implementing Deadband for the error to prevent the controller from reacting to very small errors.
+        ROLL_INFERIOR_LIMIT = math.radians(-30.0)
+        ROLL_SUPERIOR_LIMIT = math.radians(30.0)
+        PITCH_INFERIOR_LIMIT = math.radians(-60.0)
+        PITCH_SUPERIOR_LIMIT = math.radians(60.0)
+        YAW_INFERIOR_LIMIT = math.radians(-100.0)
+        YAW_SUPERIOR_LIMIT = math.radians(100.0)
+
+        # --- ROLL (X-axis) PID Calculation ---
+        if abs(error_roll) < 5.0: # Deadband of 5 pixels for roll
+            error_roll = 0.0
+        p_roll = kp_roll * error_roll
+        i_roll = ki_roll * self.integral_roll
+        if self.current_roll_angle <= ROLL_SUPERIOR_LIMIT and self.current_roll_angle >= ROLL_INFERIOR_LIMIT: # Anti-windup
+            self.integral_roll += error_roll * dt
+            i_roll = ki_roll * self.integral_roll
+        d_roll = kd_roll * ((error_roll - self.prev_error_roll) / dt)
+        control_roll = p_roll + i_roll + d_roll
+
         # --- PITCH (Y-axis) PID Calculation ---
+        if abs(error_pitch) < 5.0: # Deadband of 5 pixels for pitch
+            error_pitch = 0.0
         p_pitch = kp_pitch * error_pitch
-        self.integral_pitch += error_pitch * dt
         i_pitch = ki_pitch * self.integral_pitch
+        if self.current_pitch_angle <= PITCH_SUPERIOR_LIMIT and self.current_pitch_angle >= PITCH_INFERIOR_LIMIT:
+            self.integral_pitch += error_pitch * dt
+            i_pitch = ki_pitch * self.integral_pitch
         d_pitch = kd_pitch * ((error_pitch - self.prev_error_pitch) / dt)
         control_pitch = p_pitch + i_pitch + d_pitch
 
         # --- YAW (Z-axis) PID Calculation ---
+        if abs(error_yaw) < 5.0: # Deadband of 5 pixels for yaw
+            error_yaw = 0.0
         p_yaw = kp_yaw * error_yaw
-        self.integral_yaw += error_yaw * dt
         i_yaw = ki_yaw * self.integral_yaw
+        if self.current_yaw_angle <= YAW_SUPERIOR_LIMIT and self.current_yaw_angle >= YAW_INFERIOR_LIMIT:
+            self.integral_yaw += error_yaw * dt
+            i_yaw = ki_yaw * self.integral_yaw
         d_yaw = kd_yaw * ((error_yaw - self.prev_error_yaw) / dt)
         control_yaw = p_yaw + i_yaw + d_yaw
 
         # To avoid overshooting and to keep the control signal within reasonable limits, we can clamp the output to a maximum speed.
         MAX_SPEED = 1.0
-        control_yaw = max(min(control_yaw, MAX_SPEED), -MAX_SPEED)
+        control_roll = max(min(control_roll, MAX_SPEED), -MAX_SPEED)
         control_pitch = max(min(control_pitch, MAX_SPEED), -MAX_SPEED)
+        control_yaw = max(min(control_yaw, MAX_SPEED), -MAX_SPEED)
 
-        # Imlementing the Anti-Windup structure for the integral term,
+        # --------------------------------------------------------------------------------------------------------------------------
+        # Removed this type of anti-windup.
+        # Implementing the Anti-Windup structure for the integral term,
         # When the control detects from the feedback that the gimbal has reached its physical limit,
         # it resets the integral term to prevent it from accumulating further and causing overshoot when the target moves back within range.
         # I need to determine the physical limits of the gimbal in terms of pitch and yaw angles, for now I'll use some reasonable assumptions based on typical gimbal capabilities. 
         # These limits can be adjusted based on the actual hardware specifications.
-        PITCH_LIMIT = math.radians(60.0)
-        YAW_LIMIT = math.radians(100.0)
+        
         # This limits were found on the ModalAI's technical documentation for the BGC, but they can be further tuned based on real-world testing and the specific gimbal model used.
-        if abs(self.current_pitch_angle) >= PITCH_LIMIT:
-            self.integral_pitch = 0.0
-            if (self.current_pitch_angle * control_pitch) > 0:
-                control_pitch = 0.0 # Stop pitch movement if it's trying to move further in the same direction as the current pitch angle
+        # if abs(self.current_pitch_angle) >= PITCH_LIMIT:
+        #     self.integral_pitch = 0.0
+        #     if (self.current_pitch_angle * control_pitch) > 0:
+        #         control_pitch = 0.0 # Stop pitch movement if it's trying to move further in the same direction as the current pitch angle
 
-        if abs(self.current_yaw_angle) >= YAW_LIMIT:
-            self.integral_yaw = 0.0
-            if (self.current_yaw_angle * control_yaw) > 0:
-                control_yaw = 0.0 # Stop yaw movement if it's trying to move further in the same direction as the current yaw angle
+        # if abs(self.current_yaw_angle) >= YAW_LIMIT:
+        #     self.integral_yaw = 0.0
+        #     if (self.current_yaw_angle * control_yaw) > 0:
+        #        control_yaw = 0.0 # Stop yaw movement if it's trying to move further in the same direction as the current yaw angle
+        # --------------------------------------------------------------------------------------------------------------------------
 
         # Publish the control signal
         control_msg = Twist()
-        control_msg.angular.x = 0.0   
+        control_msg.angular.x = control_roll
         control_msg.angular.y = control_pitch 
         control_msg.angular.z = control_yaw
 
@@ -153,12 +206,13 @@ class PIDControlNode(Node):
         self.control_pub.publish(control_msg)
 
         # Update state for the next iteration
-        self.prev_error_yaw = error_yaw
+        self.prev_error_roll = error_roll
         self.prev_error_pitch = error_pitch
+        self.prev_error_yaw = error_yaw
         # self.last_time = current_time
 
         # Debugging output (can be commented out during actual operation)
-        self.get_logger().debug(f'PID OUT -> Pitch: {control_pitch:.2f}, Yaw: {control_yaw:.2f}, (dt: {dt:.3f}s)')
+        self.get_logger().debug(f'PID OUT ->Roll: {control_roll:.2f}, Pitch: {control_pitch:.2f}, Yaw: {control_yaw:.2f}, (dt: {dt:.3f}s)')
 
 def main(args=None):
     rclpy.init(args=args)
