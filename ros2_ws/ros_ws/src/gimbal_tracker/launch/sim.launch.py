@@ -45,6 +45,6 @@ def generate_launch_description():
         executable='gimbal_driver',
         name='gimbal_driver',
         output='screen',
-        parameters=[{'serial_port': '/dev/ttyUSB0', 'baud_rate': 115200}]
+        parameters=[{'serial_port': '/dev/ttyUSB0', 'baudrate': 115200}]
     )
     ])
