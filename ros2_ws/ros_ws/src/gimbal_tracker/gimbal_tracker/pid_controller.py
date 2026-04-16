@@ -94,6 +94,8 @@ class PIDControlNode(Node):
         # from the gimbal to ensure it has the necessary state information to compute accurate corrections.
         # Commenting it for simulation purposes, but it should be uncommented in the real application.
         if self.feedback_received == False:
+            self.get_logger().warning('Waiting for gimbal feedback on /feedback topic to start controlling...',
+                throttle_duration_sec=2.0)
             return # Wait until we have received feedback from the gimbal to start controlling
 
 
@@ -240,7 +242,8 @@ class PIDControlNode(Node):
             stop_msg.linear.z = 0.0
             self.control_pub.publish(stop_msg)
 
-            self.get_logger().warning('No target detected for {:.2f} seconds.'.format(time_since_last_target), throttle_duration_sec=1.0)
+            self.get_logger().warning('No target detected for {:.2f} seconds.'.format(time_since_last_target), 
+            throttle_duration_sec=1.0)
 
 def main(args=None):
     rclpy.init(args=args)
