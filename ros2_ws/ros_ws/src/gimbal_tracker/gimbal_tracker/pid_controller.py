@@ -74,7 +74,11 @@ class PIDControlNode(Node):
             10
         )
 
-        self.get_logger().info('PID Control Node initialized and ready for tuning.')
+        self.last_target_time = self.get_clock().now() # To track when we last received a target position.
+        self.target_timeout = 0.5 
+        self.watchdog_timer = self.create_timer(0.1, self.watchdog_callback) # Timer to check for target timeout
+
+        self.get_logger().info('PID Control Node initialized.')
 
     def feedback_callback(self, msg):
         # Update current angles from Gimbal feedback
@@ -85,7 +89,7 @@ class PIDControlNode(Node):
 
     def error_callback(self, msg):
         # Calculate PID control output based on the pixel error from ArUco and the current feedback from the Gimbal.
-
+        self.last_target_time = self.get_clock().now() # Update the last time we received a target position.
         # In the real application the PID controller will not start calculating control outputs until it has received feedback 
         # from the gimbal to ensure it has the necessary state information to compute accurate corrections.
         # Commenting it for simulation purposes, but it should be uncommented in the real application.
@@ -214,6 +218,29 @@ class PIDControlNode(Node):
 
         # Debugging output (can be commented out during actual operation)
         self.get_logger().debug(f'PID OUT ->Roll: {control_roll:.2f}, Pitch: {control_pitch:.2f}, Yaw: {control_yaw:.2f}, (dt: {dt:.3f}s)')
+    
+    def watchdog_callback(self):
+        # Check if we have not received a target position for a certain amount of time, and if so, reset the control outputs.
+        current_time = self.get_clock().now()
+        time_since_last_target = (current_time - self.last_target_time).nanoseconds / 1e9  # Convert to seconds
+
+        if time_since_last_target > self.target_timeout:
+            # Resetting integral terms to prevent windup when no target is detected for a while.
+            self.integral_roll = 0.0
+            self.integral_pitch = 0.0
+            self.integral_yaw = 0.0
+            # Publishing zero control signal to stop the gimbal movement when no target is detected.
+            stop_msg = Twist()
+            stop_msg.angular.x = 0.0
+            stop_msg.angular.y = 0.0
+            stop_msg.angular.z = 0.0
+            
+            stop_msg.linear.x = 0.0
+            stop_msg.linear.y = 0.0
+            stop_msg.linear.z = 0.0
+            self.control_pub.publish(stop_msg)
+
+            self.get_logger().warning('No target detected for {:.2f} seconds.'.format(time_since_last_target), throttle_duration_sec=1.0)
 
 def main(args=None):
     rclpy.init(args=args)
