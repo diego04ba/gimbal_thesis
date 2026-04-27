@@ -29,9 +29,9 @@ example_parameters = {
         'compute_brightness': False,
         'adjust_timestamp': True,
         'dump_node_map': False,
-        # set parameters defined in blackfly_s.yaml
+        # set parameters defined in blackfly_s.yaml in config folder
         'gain_auto': 'Continuous',
-        # 'pixel_format': 'BayerRG8',
+        'pixel_format': 'Mono8',
         'exposure_auto': 'Continuous',
         # to use a user set, do this:
         # 'user_set_selector': 'UserSet0',

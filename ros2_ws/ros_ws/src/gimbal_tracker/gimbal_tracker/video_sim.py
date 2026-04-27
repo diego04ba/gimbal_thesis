@@ -1,6 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
+from rclpy.qos import qos_profile_sensor_data
 import cv2
 from cv_bridge import CvBridge
 import os
@@ -21,7 +22,7 @@ class VideoSimNode(Node):
         else:
             self.get_logger().info(f'SUCCESS: Simulation started with file: {self.video_path}')
 
-        self.publisher_ = self.create_publisher(Image, '/flir_camera/image_raw', 10)
+        self.publisher_ = self.create_publisher(Image, '/flir_camera/image_raw', qos_profile_sensor_data)
         
         self.timer_period = 0.1  
         self.timer = self.create_timer(self.timer_period, self.timer_callback)

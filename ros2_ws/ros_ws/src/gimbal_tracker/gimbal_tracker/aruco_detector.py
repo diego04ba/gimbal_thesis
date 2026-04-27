@@ -1,6 +1,7 @@
 import sys
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
 
 # Importing messages to use frames and give position errors
 from sensor_msgs.msg import Image
@@ -30,7 +31,7 @@ class ArucoNode(Node):
             Image,
             '/flir_camera/image_raw',
             self.image_callback,
-            10)
+            qos_profile_sensor_data)
         self.subscription  # prevent unused variable warning
         
         # Publisher to publish the position error
@@ -102,7 +103,6 @@ def main(args=None):
     finally:
         aruco_node.destroy_node()
         rclpy.shutdown()
-        cv2.destroyAllWindows()
 
 if __name__ == '__main__':
     main()

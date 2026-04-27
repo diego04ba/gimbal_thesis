@@ -12,7 +12,7 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(
             os.path.join(spinnaker_dir, 'launch', 'driver_node.launch.py')
         ),
-        # Arguments: can add 'camera_type': 'camera_type' if needed, but for now we will just specify the serial number
+        # # To change settings, modify the driver_node.launch.py in the spinnaker_camera_driver package.
         launch_arguments={
             'serial': "'22115751'" 
         }.items()
