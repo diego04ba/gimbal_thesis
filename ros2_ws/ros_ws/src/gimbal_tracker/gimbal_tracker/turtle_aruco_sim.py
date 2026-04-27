@@ -44,14 +44,14 @@ class TurtleArucoSim(Node):
         error_yaw = angle_to_target - self.gimbal_pose.theta
         
         # Normalizes the error to be between -pi and pi
-        error_yaw = math.atan2(math.sin(error_yaw), math.cos(error_yaw))
+        error_roll = math.atan2(math.sin(error_yaw), math.cos(error_yaw))
 
         # To simulate pixel error:
-        pixel_error_yaw = error_yaw * 100.0
+        pixel_error_roll = error_roll * 100.0
 
-        # Publish the error as a Point message (x = yaw error, y and z unused)
+        # Publish the error as a Point message (x = roll error, y and z unused)
         err_msg = Point()
-        err_msg.x = pixel_error_yaw
+        err_msg.x = pixel_error_roll
         err_msg.y = 0.0
         err_msg.z = 0.0
         
