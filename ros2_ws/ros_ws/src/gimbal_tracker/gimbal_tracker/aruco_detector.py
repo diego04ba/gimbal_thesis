@@ -28,7 +28,7 @@ class ArucoNode(Node):
         # Subscribing to the /image topic to get frames
         self.subscription = self.create_subscription(
             Image,
-            '/image_raw',
+            '/flir_camera/image_raw',
             self.image_callback,
             10)
         self.subscription  # prevent unused variable warning

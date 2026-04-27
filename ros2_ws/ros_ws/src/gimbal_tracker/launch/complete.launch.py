@@ -16,7 +16,7 @@ def generate_launch_description():
         ),
         # Arguments: can add 'camera_type': 'camera_type' if needed, but for now we will just specify the serial number
         launch_arguments={
-            'serial': "'20435008'" 
+            'serial': "'22115751'" 
         }.items()
     )
 
@@ -36,7 +36,7 @@ def generate_launch_description():
         output='screen'
     )
 
-    # Node 4: Gimbal Hardware Interface
+    # Node 4: Gimbal Hardware Interface: modify serial port or baudrate as needed
     gimbal_driver = Node(
         package='gimbal_tracker',
         executable='gimbal_driver',

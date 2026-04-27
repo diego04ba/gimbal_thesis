@@ -14,7 +14,7 @@ def generate_launch_description():
         ),
         # Arguments: can add 'camera_type': 'camera_type' if needed, but for now we will just specify the serial number
         launch_arguments={
-            'serial': "'20435008'" 
+            'serial': "'22115751'" 
         }.items()
     )
 
