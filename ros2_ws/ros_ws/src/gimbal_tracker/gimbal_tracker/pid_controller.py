@@ -132,12 +132,12 @@ class PIDControlNode(Node):
         error_yaw = msg.x    # Positive X error means target is to the right
 
         # Implementing Clamping for the integral term to prevent windup when the gimbal is near its physical limits.
-        ROLL_INFERIOR_LIMIT = math.radians(-30.0)
-        ROLL_SUPERIOR_LIMIT = math.radians(30.0)
-        PITCH_INFERIOR_LIMIT = math.radians(-60.0)
-        PITCH_SUPERIOR_LIMIT = math.radians(60.0)
-        YAW_INFERIOR_LIMIT = math.radians(-100.0)
-        YAW_SUPERIOR_LIMIT = math.radians(100.0)
+        ROLL_INFERIOR_LIMIT = math.radians(-90.0)
+        ROLL_SUPERIOR_LIMIT = math.radians(90.0)
+        PITCH_INFERIOR_LIMIT = math.radians(-180.0)
+        PITCH_SUPERIOR_LIMIT = math.radians(180.0)
+        YAW_INFERIOR_LIMIT = math.radians(-45.0)
+        YAW_SUPERIOR_LIMIT = math.radians(45.0)
         # Implementing Deadband for the error to prevent the controller from reacting to very small errors.
         DEADBAND = 5.0 # pixels
 
