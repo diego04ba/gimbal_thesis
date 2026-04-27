@@ -21,7 +21,7 @@ class VideoSimNode(Node):
         else:
             self.get_logger().info(f'SUCCESS: Simulation started with file: {self.video_path}')
 
-        self.publisher_ = self.create_publisher(Image, '/image_raw', 10)
+        self.publisher_ = self.create_publisher(Image, '/flir_camera/image_raw', 10)
         
         self.timer_period = 0.1  
         self.timer = self.create_timer(self.timer_period, self.timer_callback)
@@ -43,6 +43,7 @@ class VideoSimNode(Node):
         # If a frame is successfully read, convert it to a ROS Image message and publish.
         if ret:
             # Convert OpenCV BGR format to ROS sensor_msgs/Image
+            frame = cv2.resize(frame, (640, 480))
             msg = self.bridge.cv2_to_imgmsg(frame, encoding="bgr8")
             
             # Add timestamp and frame_id for synchronization and tracking purposes

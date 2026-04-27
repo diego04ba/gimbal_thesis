@@ -5,13 +5,15 @@ RUN apt update -y && apt install -y \
     python3-pip \
     python3-opencv \
     python3-numpy \
-    ros-humble-cv-bridge \
     wget \
     usbutils \
+    ros-humble-cv-bridge \
     ros-humble-turtlesim \
     ros-humble-rqt-graph \
+    ros-humble-rqt-image-view \ 
     ros-humble-example-interfaces \
     && rm -rf /var/lib/apt/lists/*
+    # "ros2 run rqt_image_view rqt_image_view" to view the camera feed
 
 RUN pip3 install --no-cache-dir opencv-contrib-python-headless==4.8.0.74 --no-deps
 

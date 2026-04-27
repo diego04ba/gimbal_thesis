@@ -8,7 +8,7 @@ from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
-    # Node 1: FLIR Camera Driver
+    # FLIR Camera Driver
     spinnaker_dir = get_package_share_directory('spinnaker_camera_driver')
     flir_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -20,15 +20,15 @@ def generate_launch_description():
         }.items()
     )
 
-    # Node 2: ArUco Detector
+    # ArUco Detector
     aruco_node = Node(
         package='gimbal_tracker',
         executable='aruco_detector', 
-        name='aruco_processor',
+        name='aruco_detector',
         output='screen'
     )
 
-    # Node 3: PID Controller for Gimbal
+    # PID Controller for Gimbal
     pid_node = Node(
         package='gimbal_tracker',
         executable='pid_controller',
@@ -36,7 +36,7 @@ def generate_launch_description():
         output='screen'
     )
 
-    # Node 4: Gimbal Hardware Interface: modify serial port or baudrate as needed
+    # Gimbal Hardware Interface: modify serial port or baudrate as needed
     gimbal_driver = Node(
         package='gimbal_tracker',
         executable='gimbal_driver',
@@ -45,9 +45,17 @@ def generate_launch_description():
         parameters=[{'serial_port': '/dev/ttyUSB0', 'baudrate': 115200}]
     )
 
+    rqt_image_view = Node(
+        package='rqt_image_view',
+        executable='rqt_image_view',
+        name='rqt_image_view',
+        output='screen',
+    )
+
     return LaunchDescription([
         flir_launch,
         aruco_node,
         pid_node,
-        gimbal_driver
+        gimbal_driver,
+        rqt_image_view
     ])

@@ -8,7 +8,7 @@ def generate_launch_description():
     video_path = os.path.join(pkg_share, 'media', 'aruco_detector_test.mp4')
 
     return LaunchDescription([
-        # NODE 1: The MP4 Video Simulator
+        # The MP4 Video Simulator
         # This node reads the video file and publishes frames to /image_raw
         Node(
             package='gimbal_tracker',
@@ -20,31 +20,19 @@ def generate_launch_description():
             }]
         ),
 
-        # NODE 2: ArUco Detector
-        # This node subscribes to /image_raw and processes the frames
+        # ArUco Detector
         Node(
             package='gimbal_tracker',
             executable='aruco_detector', 
-            name='aruco_processor',
+            name='aruco_detector',
             output='screen'
         ),
 
-        # NODE 3: PID Controller
-        # This node subscribes to the ArUco detection results and computes control commands
         Node(
-            package='gimbal_tracker',
-            executable='pid_controller', 
-            name='pid_controller',
-            output='screen'
+            package='rqt_image_view',
+            executable='rqt_image_view',
+            name='rqt_image_view',
+            output='screen',
         ),
 
-        # NODE 4: Gimbal Driver  
-        # This node subscribes to the control commands and simulates the gimbal yaw movement
-        Node(
-        package='gimbal_tracker',
-        executable='gimbal_driver',
-        name='gimbal_driver',
-        output='screen',
-        parameters=[{'serial_port': '/dev/ttyUSB0', 'baudrate': 115200}]
-    )
     ])
