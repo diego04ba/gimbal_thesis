@@ -12,10 +12,10 @@ The system captures frames from a FLIR camera, detects the ArUco marker's positi
 
 ## Software Architecture
 The project consists of four main ROS2 nodes:
-1.  **aruco_detector**: Processes camera frames to detect markers and publishes pixel errors. 
-2.  **pid_controller**: Implements the control logic.
-3.  **gimbal_driver**: The hardware interface that translates ROS Twist messages into SimpleBGC binary packets for the AlexMos board.
-4.  **spinnaker_camera_driver**: Industrial driver for high-speed image acquisition.
+1.  **spinnaker_camera_driver**: Industrial driver for high-speed image acquisition.
+2.  **aruco_detector**: Processes camera frames to detect markers and publishes pixel errors. 
+3.  **pid_controller**: Implements the control logic. 
+4.  **gimbal_driver**: The hardware interface that translates ROS Twist messages into SimpleBGC binary packets for the AlexMos board.
 
 ## Installation and Setup
 
