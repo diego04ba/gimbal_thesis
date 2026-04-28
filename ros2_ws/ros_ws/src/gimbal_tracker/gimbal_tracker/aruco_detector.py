@@ -44,6 +44,8 @@ class ArucoNode(Node):
         self.target_fps = 20.0
         self.min_time_between_frames = 1.0 / self.target_fps
         self.last_processed_time = self.get_clock().now()
+
+        self.resize_factor = 0.5 # To reduce the resolution for faster processing, needs testing
         
         self.get_logger().info(f'Aruco Node initialized. Tracking target ID: {self.target_id}')
 
@@ -61,7 +63,10 @@ class ArucoNode(Node):
             cv_image = self.br.imgmsg_to_cv2(msg, desired_encoding='mono8')
 
             # Reducing the resolution for faster processing
-            small_image = cv2.resize(cv_image, (0, 0), fx=0.5, fy=0.5)
+            if self.resize_factor < 1.0:
+                small_image = cv2.resize(cv_image, (0, 0), fx=self.resize_factor, fy=self.resize_factor)
+            else:
+                small_image = cv_image
             
             # Dinamically get the dimensions of the frame to calculate the center (Setpoint)
             height, width = small_image.shape[:2]
@@ -94,8 +99,8 @@ class ArucoNode(Node):
                     error_y = marker_center_y - frame_center_y
 
                     # Resize the error values to match the original image dimensions
-                    real_error_x = error_x * 2.0  # Since we reduced the resolution by half
-                    real_error_y = error_y * 2.0
+                    real_error_x = error_x * (1 / self.resize_factor)
+                    real_error_y = error_y * (1 / self.resize_factor)
 
                     # Publishing the Point message
                     error_msg = Point()

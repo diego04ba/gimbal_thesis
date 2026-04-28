@@ -78,7 +78,7 @@ class GimbalDriver(Node):
 
         roll_speed = int(roll * multiplier)
         pitch_speed = int(pitch * multiplier)
-        yaw_speed = int(yaw * multiplier) 
+        yaw_speed = int(yaw * multiplier * 0) # Avoiding noise 
 
         # Construct SBGC CMD_CONTROL Payload
         # Mode: 1 (Speed mode that ignores angle commands), Speed/Angle for Roll , Pitch, Yaw
@@ -164,9 +164,9 @@ class GimbalDriver(Node):
                             
                                 # BGC board maps angles with a resolution of 0.02197265625 degrees per unit
                                 # (This value is derived from 360 degrees / 16384)
-                                pitch_deg = pitch_raw * 0.02197265625
-                                yaw_deg = yaw_raw * 0.02197265625
                                 roll_deg = roll_raw * 0.02197265625
+                                pitch_deg = pitch_raw * 0.02197265625
+                                yaw_deg = yaw_raw * 0.02197265625 * 0 # Avoiding noise
 
                                 return {'roll': roll_deg, 'pitch': pitch_deg, 'yaw': yaw_deg}
                             
