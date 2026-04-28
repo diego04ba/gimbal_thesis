@@ -30,9 +30,11 @@ example_parameters = {
         'adjust_timestamp': True,
         'dump_node_map': False,
         # set parameters defined in blackfly_s.yaml in config folder
-        'gain_auto': 'Continuous',
+        'gain_auto': 'Continuous',  # 'Off', 'Continuous'
+        # 'gain': 15.0,
         'pixel_format': 'Mono8',
-        'exposure_auto': 'Continuous',
+        'exposure_auto': 'Continuous', # 'Off', 'Continuous'
+        # 'exposure_time': 10000.0,  # in milliseconds
         # to use a user set, do this:
         # 'user_set_selector': 'UserSet0',
         # 'user_set_load': 'Yes',
@@ -48,13 +50,13 @@ example_parameters = {
         # 'image_height': 1080,
         # 'offset_x': 16,
         # 'offset_y': 0,
-        # 'binning_x': 1,
-        # 'binning_y': 1,
+        'binning_x': 2,
+        'binning_y': 2,
         # 'connect_while_subscribed': True,
-        # 'reverse_x': True,
-        # 'reverse_y': True,
+        'reverse_x': True,
+        'reverse_y': True,
         'frame_rate_auto': 'Off',
-        'frame_rate': 40.0,
+        'frame_rate': 60.0,
         'frame_rate_enable': True,
         'buffer_queue_size': 10,
         'trigger_mode': 'Off',
@@ -68,8 +70,8 @@ example_parameters = {
         'chunk_selector_timestamp': 'Timestamp',
         'chunk_enable_timestamp': True,
         'diagnostic_period': 1.0,
-        'diagnostic_min_freq': 39.0,
-        'diagnostic_max_freq': 41.0
+        'diagnostic_min_freq': 59.0,
+        'diagnostic_max_freq': 61.0
     },
     'blackfly': {
         'debug': False,
@@ -202,7 +204,7 @@ def generate_launch_description():
             ),
             LaunchArg(
                 'serial',
-                default_value="'20435008'",
+                default_value="'22115751'",
                 description='FLIR serial number of camera (in quotes!!)',
             ),
             LaunchArg(

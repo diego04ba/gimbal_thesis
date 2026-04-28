@@ -31,32 +31,33 @@ class ArucoNode(Node):
             Image,
             '/flir_camera/image_raw',
             self.image_callback,
-            qos_profile_sensor_data)
+            10)
         self.subscription  # prevent unused variable warning
         
         # Publisher to publish the position error
-        self.publisher_ = self.create_publisher(Point, '/position', 10)
+        self.publisher_ = self.create_publisher(Point, '/position', qos_profile_sensor_data)
+
+        self.last_marker_time = self.get_clock().now()
+        self.marker_timeout = 5.0
+        self.watchdog_timer = self.create_timer(5, self.watchdog_callback)
         
         self.get_logger().info(f'Aruco Node initialized. Tracking target ID: {self.target_id}')
 
     # Creating the function to process the frames everytime the node gets one
     def image_callback(self, msg):
         try:
-            # 1. Conversioon of the ROS Image message to OpenCV format
-            cv_image = self.br.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+            # Conversion of the ROS Image message to OpenCV format
+            cv_image = self.br.imgmsg_to_cv2(msg, desired_encoding='mono8')
             
-            # 2. Dinamically get the dimensions of the frame to calculate the center (Setpoint)
+            # Dinamically get the dimensions of the frame to calculate the center (Setpoint)
             height, width = cv_image.shape[:2]
             
             # Exact center of the frame (Setpoint for the gimbal)
             frame_center_x = width / 2.0
             frame_center_y = height / 2.0
 
-            # 3. Grey conversion for better ArUco detection
-            gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
-
-            # 4. ArUco Marker Detection
-            corners, ids, _ = aruco.detectMarkers(gray, self.aruco_dict, parameters=self.parameters)
+            # ArUco Marker Detection
+            corners, ids, _ = aruco.detectMarkers(cv_image, self.aruco_dict, parameters=self.parameters)
 
             if ids is not None:
                 # Flatten the ID array for easier searching
@@ -64,20 +65,21 @@ class ArucoNode(Node):
 
                 # Check if the target ID is among the detected markers
                 if self.target_id in ids_flat:
+                    self.last_marker_time = self.get_clock().now() # Update last seen time
                     # Find the index of the target ID to get its corresponding corners
                     idx = list(ids_flat).index(self.target_id)
                     marker_corners = corners[idx][0]
 
-                    # 5. Calculation of the marker center (in pixel coordinates)
+                    # Calculation of the marker center (in pixel coordinates)
                     marker_center_x = float(marker_corners[:, 0].mean())
                     marker_center_y = float(marker_corners[:, 1].mean())
 
-                    # 6. Calculation of the error (Distance between marker center and frame center)
+                    # Calculation of the error (Distance between marker center and frame center)
                     # If the error is 0, the marker is perfectly centered
                     error_x = marker_center_x - frame_center_x
                     error_y = marker_center_y - frame_center_y
 
-                    # 7. Publishing the Point message
+                    # Publishing the Point message
                     error_msg = Point()
                     error_msg.x = error_x
                     error_msg.y = error_y
@@ -92,6 +94,13 @@ class ArucoNode(Node):
 
         except Exception as e:
             self.get_logger().error(f'Error in callback: {str(e)}')
+    
+    def watchdog_callback(self):
+        current_time = self.get_clock().now()
+        time_since_last_marker = (current_time - self.last_marker_time).nanoseconds / 1e9
+
+        if time_since_last_marker > self.marker_timeout:
+            self.get_logger().warn(f'No marker detected for {time_since_last_marker:.2f} seconds. Check camera feed or marker visibility.')
 
 def main(args=None):
     rclpy.init(args=args)

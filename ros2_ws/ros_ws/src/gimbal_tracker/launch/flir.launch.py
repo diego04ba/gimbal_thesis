@@ -26,6 +26,7 @@ def generate_launch_description():
         output='screen'
     )
 
+    # RQT Image View
     rqt_image_view = Node(
         package='rqt_image_view',
         executable='rqt_image_view',
