@@ -93,10 +93,10 @@ class PIDControlNode(Node):
         # In the real application the PID controller will not start calculating control outputs until it has received feedback 
         # from the gimbal to ensure it has the necessary state information to compute accurate corrections.
         # Commenting it for simulation purposes, but it should be uncommented in the real application.
-        #if self.feedback_received == False:
-            #self.get_logger().warning('Waiting for gimbal feedback on /feedback topic to start controlling...',
-                #throttle_duration_sec=2.0)
-            #return # Wait until we have received feedback from the gimbal to start controlling
+        if self.feedback_received == False:
+            self.get_logger().warning('Waiting for gimbal feedback on /feedback topic to start controlling...',
+                throttle_duration_sec=2.0)
+            return # Wait until we have received feedback from the gimbal to start controlling
 
 
         # Calculate time difference (dt)
@@ -219,7 +219,7 @@ class PIDControlNode(Node):
         # self.last_time = current_time
 
         # Debugging output (can be commented out during actual operation)
-        self.get_logger().debug(f'PID OUT ->Roll: {control_roll:.2f}, Pitch: {control_pitch:.2f}, Yaw: {control_yaw:.2f}, (dt: {dt:.3f}s)')
+        self.get_logger().debug(f'PID OUT -> Roll: {control_roll:.2f}, Pitch: {control_pitch:.2f}, Yaw: {control_yaw:.2f}, (dt: {dt:.3f}s)')
     
     def watchdog_callback(self):
         # Check if we have not received a target position for a certain amount of time, and if so, reset the control outputs.

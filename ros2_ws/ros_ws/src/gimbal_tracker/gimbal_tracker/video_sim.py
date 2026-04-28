@@ -24,7 +24,7 @@ class VideoSimNode(Node):
 
         self.publisher_ = self.create_publisher(Image, '/flir_camera/image_raw', 10)
         
-        self.timer_period = 0.1  
+        self.timer_period = 0.03342245989  
         self.timer = self.create_timer(self.timer_period, self.timer_callback)
 
     def timer_callback(self):
@@ -45,7 +45,8 @@ class VideoSimNode(Node):
         if ret:
             # Convert OpenCV BGR format to ROS sensor_msgs/Image
             frame = cv2.resize(frame, (640, 480))
-            msg = self.bridge.cv2_to_imgmsg(frame, encoding="bgr8")
+            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            msg = self.bridge.cv2_to_imgmsg(gray_frame, encoding="mono8")
             
             # Add timestamp and frame_id for synchronization and tracking purposes
             msg.header.stamp = self.get_clock().now().to_msg()

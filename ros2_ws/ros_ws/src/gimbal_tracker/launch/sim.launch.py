@@ -28,6 +28,7 @@ def generate_launch_description():
             output='screen'
         ),
 
+        # RQT Image View to visualize the camera feed
         Node(
             package='rqt_image_view',
             executable='rqt_image_view',

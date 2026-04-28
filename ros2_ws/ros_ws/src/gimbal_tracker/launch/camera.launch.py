@@ -5,7 +5,7 @@ from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
     return LaunchDescription([
-        # NODE 1: Camera Node
+        # Camera Node
         Node(
             package='gimbal_tracker',
             executable='camera_node', 
@@ -14,11 +14,19 @@ def generate_launch_description():
             parameters=[{'use_sim_time': False}]
         ),
 
-        # NODE 2: ArUco Detector
+        # ArUco Detector
         Node(
             package='gimbal_tracker',
             executable='aruco_detector', 
             name='aruco_processor',
             output='screen',
+        ),
+
+        # RQT Image View to visualize the camera feed
+        Node(
+            package='rqt_image_view',
+            executable='rqt_image_view',
+            name='rqt_image_view', 
+            output='screen'
         )
     ])

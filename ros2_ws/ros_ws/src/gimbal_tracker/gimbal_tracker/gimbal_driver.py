@@ -1,16 +1,11 @@
 # ==============================================================================
 # Gimbal Driver Node for BGC 2.2 (Firmware 2.2b2 - 8-bit AlexMos)
 # 
-# PRIMARY INTERFACE (Current): 
+# CURRENT INTERFACE: 
 # Overriding setpoints via USB/Serial using the SimpleBGC (SBGC) Binary Protocol.
 # CMD_CONTROL ('C') is used to send speed commands.
 # CMD_REALTIME_DATA ('D') is used to request IMU angles.
 #
-# SECONDARY INTERFACE (Fallback):
-# If the 8-bit MCU struggles with serial buffer latency during USB override,
-# control can be routed through an external MCU (e.g., Arduino) acting as a relay,
-# converting the ROS 2 Twist commands into standard PWM signals fed into the 
-# BGC's RC inputs (RC_ROLL, RC_PITCH).
 # ==============================================================================
 
 import math
@@ -158,7 +153,7 @@ class GimbalDriver(Node):
                                 # Move the Gimbal by hand up and down: watch which bytes change in the terminal.
                                 # That will be your offset for the Pitch. Then do the same to the right/left for the Yaw.
                             
-                                # self.get_logger().info(f"Payload length: {len(payload)} | Data: {payload.hex()}")
+                                self.get_logger().info(f"Payload length: {len(payload)} | Data: {payload.hex()}")
 
                                 # Assume offset values for older 8-bit boards (e.g., 32, 34 and 36).
                                 # 'h' means signed 16-bit integer. '<' means Little-Endian.

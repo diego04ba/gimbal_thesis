@@ -35,29 +35,43 @@ class ArucoNode(Node):
         self.subscription  # prevent unused variable warning
         
         # Publisher to publish the position error
-        self.publisher_ = self.create_publisher(Point, '/position', qos_profile_sensor_data)
+        self.publisher_ = self.create_publisher(Point, '/position', 10)
 
         self.last_marker_time = self.get_clock().now()
         self.marker_timeout = 5.0
         self.watchdog_timer = self.create_timer(5, self.watchdog_callback)
+
+        self.target_fps = 20.0
+        self.min_time_between_frames = 1.0 / self.target_fps
+        self.last_processed_time = self.get_clock().now()
         
         self.get_logger().info(f'Aruco Node initialized. Tracking target ID: {self.target_id}')
 
     # Creating the function to process the frames everytime the node gets one
     def image_callback(self, msg):
         try:
+            # Elaborating only 20 frames per second to reduce CPU load
+            current_time = self.get_clock().now()
+            time_since_last_frame = (current_time - self.last_processed_time).nanoseconds / 1e9
+            if time_since_last_frame < self.min_time_between_frames:
+                return  # Skip processing to maintain target FPS
+            self.last_processed_time = current_time
+
             # Conversion of the ROS Image message to OpenCV format
             cv_image = self.br.imgmsg_to_cv2(msg, desired_encoding='mono8')
+
+            # Reducing the resolution for faster processing
+            small_image = cv2.resize(cv_image, (0, 0), fx=0.5, fy=0.5)
             
             # Dinamically get the dimensions of the frame to calculate the center (Setpoint)
-            height, width = cv_image.shape[:2]
+            height, width = small_image.shape[:2]
             
             # Exact center of the frame (Setpoint for the gimbal)
             frame_center_x = width / 2.0
             frame_center_y = height / 2.0
 
             # ArUco Marker Detection
-            corners, ids, _ = aruco.detectMarkers(cv_image, self.aruco_dict, parameters=self.parameters)
+            corners, ids, _ = aruco.detectMarkers(small_image, self.aruco_dict, parameters=self.parameters)
 
             if ids is not None:
                 # Flatten the ID array for easier searching
@@ -79,18 +93,22 @@ class ArucoNode(Node):
                     error_x = marker_center_x - frame_center_x
                     error_y = marker_center_y - frame_center_y
 
+                    # Resize the error values to match the original image dimensions
+                    real_error_x = error_x * 2.0  # Since we reduced the resolution by half
+                    real_error_y = error_y * 2.0
+
                     # Publishing the Point message
                     error_msg = Point()
-                    error_msg.x = error_x
-                    error_msg.y = error_y
-                    error_msg.z = 0.0  # We can use Z for future distance (marker area)
+                    error_msg.x = real_error_x
+                    error_msg.y = real_error_y
+                    error_msg.z = 0.0 
                     
                     self.publisher_.publish(error_msg)
 
                     # Logging the error for debugging purposes
-                    self.get_logger().info(f'TARGET ID {self.target_id} - Error X: {error_x:.2f}, Y: {error_y:.2f}')
+                    self.get_logger().info(f'TARGET ID {self.target_id} - Error X: {real_error_x:.2f}, Y: {real_error_y:.2f}')
                 else:
-                    self.get_logger().info(f'Marker ID {self.target_id} not found.', once=False)
+                    self.get_logger().info(f'Marker ID {self.target_id} not found.', once=False, throttle_duration_sec=1.0)
 
         except Exception as e:
             self.get_logger().error(f'Error in callback: {str(e)}')
