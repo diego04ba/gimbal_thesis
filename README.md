@@ -38,4 +38,11 @@ The project uses a containerized environment to manage ROS2 Humble dependencies 
 
 # Grant X11 permissions and start the container with hardware access
 ./run.sh
+
+# In the container you have to run these two commands
+colcon build --symlink-install
+source install/setup.bash
+
+# To deploy the system
+ros2 launch gimbal_tracker complete.launch.py
 ```
