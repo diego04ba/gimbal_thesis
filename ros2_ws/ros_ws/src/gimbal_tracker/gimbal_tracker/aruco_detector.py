@@ -45,8 +45,10 @@ class ArucoNode(Node):
         self.min_time_between_frames = 1.0 / self.target_fps
         self.last_processed_time = self.get_clock().now()
 
-        self.resize_factor = 0.5 # To reduce the resolution for faster processing, needs testing
-        
+        # ros2 param set aruco_node resize_factor 0.5
+        self.declare_parameter('resize_factor', 0.5) # To reduce the resolution for faster processing, needs testing
+        self.resize_factor = self.get_parameter('resize_factor').get_parameter_value().double_value
+
         self.get_logger().info(f'Aruco Node initialized. Tracking target ID: {self.target_id}')
 
     # Creating the function to process the frames everytime the node gets one

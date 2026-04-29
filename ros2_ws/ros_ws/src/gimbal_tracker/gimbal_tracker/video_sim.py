@@ -9,10 +9,16 @@ import os
 class VideoSimNode(Node):
     def __init__(self):
         super().__init__('video_simulator')
-        self.declare_parameter('mp4_path', 'aruco_detector_test.mp4')
+        self.declare_parameter('mp4_path', 'ros_workspace/src/gimbal_tracker/media/aruco_detector_test.mp4')
         self.video_path = self.get_parameter('mp4_path').get_parameter_value().string_value
         
         self.bridge = CvBridge()
+
+        if os.path.exists(self.video_path):
+            self.get_logger().info(f'FILE FOUND: The file exists at {os.path.abspath(self.video_path)}')
+        else:
+            self.get_logger().error(f'FILE NOT FOUND: No file at {os.path.abspath(self.video_path)}')
+
         
         self.cap = cv2.VideoCapture(self.video_path)
         
