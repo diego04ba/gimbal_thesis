@@ -28,8 +28,31 @@ xhost +local:root
 
 ### 2. Spinnaker SDK Installation
 To ensure full hardware compatibility and optimal performance with the FLIR Firefly S camera, the Spinnaker SDK should be installed on the host system. This is necessary to correctly configure udev rules for USB device permissions and to manage the kernel's USBFS memory limits, which are critical for high-resolution industrial image streaming.
+**Note**: To ensure the camera is detected, modify the complete.launch.py file by entering your camera's specific serial number as a string (e.g., '123456789').
 
-### 3. Docker Build and Deployment
+### 3. Correct Gimbal Interfacing
+The gimbal is typically assigned to /dev/ttyUSB0. If the device is assigned to a different port, locate it and update the serial_port parameter in complete.launch.py.
+
+```bash
+# To identify the port assigned to the gimbal run in the terminal
+ls -l /dev/ttyUSB* /dev/ttyACM*
+```
+
+To grant the necessary permissions for the Docker container to access the serial port:
+
+```bash
+# Run this command using the correct port identified above
+sudo chmod 666 /dev/ttyUSB0 
+sudo usermod -a -G dialout $USER
+```
+
+To verify that the container correctly recognizes the serial port, you can run the following inside the container:
+
+```bash
+python3 -m serial.tools.list_ports
+```
+
+### 4. Docker Build and Deployment
 The project uses a containerized environment to manage ROS2 Humble dependencies and OpenCV libraries using Docker. Use the provided automation scripts to build the image and launch the system:
 
 ```bash
@@ -38,8 +61,12 @@ The project uses a containerized environment to manage ROS2 Humble dependencies 
 
 # Grant X11 permissions and start the container with hardware access
 ./run.sh
+```
+Inside the container, navigate to the ros_workspace directory (running the container should already take you there), build the package, and launch the system:
 
-# In the container you have to run these two commands
+```bash
+# Build the workspace
+cd ros_workspace/ # You should already be in this directory
 colcon build --symlink-install
 source install/setup.bash
 
