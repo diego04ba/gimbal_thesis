@@ -28,10 +28,10 @@ xhost +local:root
 
 ### 2. Spinnaker SDK Installation
 To ensure full hardware compatibility and optimal performance with the FLIR Firefly S camera, the Spinnaker SDK should be installed on the host system. This is necessary to correctly configure udev rules for USB device permissions and to manage the kernel's USBFS memory limits, which are critical for high-resolution industrial image streaming.
-**Note**: To ensure the camera is detected, modify the complete.launch.py file by entering your camera's specific serial number as a string (e.g., '123456789').
+**Note**: To ensure the camera is detected, modify the `complete.launch.py` file by entering your camera's specific serial number as a string (e.g., '123456789').
 
-### 3. Correct Gimbal Interfacing
-The gimbal is typically assigned to /dev/ttyUSB0. If the device is assigned to a different port, locate it and update the serial_port parameter in complete.launch.py.
+### 3. Gimbal Interfacing
+The gimbal is typically assigned to `/dev/ttyUSB0` with a default baudrate of `115200`. If the device is assigned to a different port or the internal baudrate has been modified via the SimpleBGC GUI, update the corresponding parameters in `complete.launch.py`.
 
 ```bash
 # To identify the port assigned to the gimbal run in the terminal
@@ -51,6 +51,8 @@ To verify that the container correctly recognizes the serial port, you can run t
 ```bash
 python3 -m serial.tools.list_ports
 ```
+
+**Note on Baudrate**: While 115200 is the standard for BGC 2.2 firmware, if you experience communication issues, verify the board settings in the SimpleBGC GUI and ensure the baudrate parameter in the launch file matches the hardware configuration.
 
 ### 4. Docker Build and Deployment
 The project uses a containerized environment to manage ROS2 Humble dependencies and OpenCV libraries using Docker. Use the provided automation scripts to build the image and launch the system:
