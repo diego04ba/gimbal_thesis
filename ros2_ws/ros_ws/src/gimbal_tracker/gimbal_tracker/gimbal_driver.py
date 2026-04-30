@@ -151,7 +151,7 @@ class GimbalDriver(Node):
                             try: 
                                 # Uncomment the line below the first time you run the node.
                                 # Move the Gimbal by hand up and down: watch which bytes change in the terminal.
-                                # That will be your offset for the Pitch. Then do the same to the right/left for the Yaw.
+                                # That will be your offset for the Pitch. Then do the same to the right/left for the Roll.
                             
                                 self.get_logger().info(f"Payload length: {len(payload)} | Data: {payload.hex()}")
 
