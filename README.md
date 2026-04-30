@@ -52,7 +52,7 @@ To verify that the container correctly recognizes the serial port, you can run t
 python3 -m serial.tools.list_ports
 ```
 
-**Note on Baudrate**: While 115200 is the standard for BGC 2.2 firmware, if you experience communication issues, verify the board settings in the SimpleBGC GUI and ensure the baudrate parameter in the launch file matches the hardware configuration.
+**Note on Baudrate**: While `115200` is the standard for BGC 2.2 firmware, if you experience communication issues, verify the board settings in the SimpleBGC GUI and ensure the baudrate parameter in the launch file matches the hardware configuration.
 
 ### 4. Docker Build and Deployment
 The project uses a containerized environment to manage ROS2 Humble dependencies and OpenCV libraries using Docker. Use the provided automation scripts to build the image and launch the system:
