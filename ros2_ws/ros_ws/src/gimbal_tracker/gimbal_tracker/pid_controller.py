@@ -108,8 +108,11 @@ class PIDControlNode(Node):
         # Or use dt as the fixed sample time:
         # dt = 0.1  # Assuming a fixed control loop of 10 Hz (0.1 seconds)
 
-        # Prevent division by zero on the very first callback or fast bursts
+        # Prevent division by zero on the very first callback or fast bursts, and lags in the system.
         if dt <= 0.0:
+            return
+        if dt >= 0.5:
+            dt = 0.1 
             return
 
         # Fetch current tunable gains
