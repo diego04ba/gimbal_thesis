@@ -45,8 +45,7 @@ class ArucoNode(Node):
         self.min_time_between_frames = 1.0 / self.target_fps
         self.last_processed_time = self.get_clock().now()
 
-        # ros2 param set aruco_node resize_factor 0.5
-        self.declare_parameter('resize_factor', 0.5) # To reduce the resolution for faster processing, needs testing
+        self.declare_parameter('resize_factor', 1.0) # To reduce the resolution for faster processing, modify in launch file if needed
         self.resize_factor = self.get_parameter('resize_factor').get_parameter_value().double_value
 
         self.get_logger().info(f'Aruco Node initialized. Tracking target ID: {self.target_id}')
@@ -65,7 +64,7 @@ class ArucoNode(Node):
             cv_image = self.br.imgmsg_to_cv2(msg, desired_encoding='mono8')
 
             # Reducing the resolution for faster processing
-            if self.resize_factor < 1.0:
+            if self.resize_factor < 1.0 and self.resize_factor > 0.0:
                 small_image = cv2.resize(cv_image, (0, 0), fx=self.resize_factor, fy=self.resize_factor)
             else:
                 small_image = cv_image

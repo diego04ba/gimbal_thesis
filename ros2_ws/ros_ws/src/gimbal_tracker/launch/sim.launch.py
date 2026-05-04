@@ -25,7 +25,8 @@ def generate_launch_description():
             package='gimbal_tracker',
             executable='aruco_detector', 
             name='aruco_detector',
-            output='screen'
+            output='screen',
+            parameters=[{'resize_factor': 1.0}]
         ),
 
         # RQT Image View to visualize the camera feed

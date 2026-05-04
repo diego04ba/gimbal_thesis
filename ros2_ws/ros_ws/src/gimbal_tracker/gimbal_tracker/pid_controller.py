@@ -20,14 +20,14 @@ class PIDControlNode(Node):
         # ros2 param set /pid_controller kd_* <float_value>
 
         # Roll (X-axis) PID gains
-        self.declare_parameter('kp_roll', 0.04)
-        self.declare_parameter('ki_roll', 0.001)
-        self.declare_parameter('kd_roll', 0.005)
+        self.declare_parameter('kp_roll', 0.04) # Proportional gain that gives a good velocity response without too much overshoot
+        self.declare_parameter('ki_roll', 0.001) # Integral gain that helps eliminate steady-state error, small to avoid instability
+        self.declare_parameter('kd_roll', 0.005) # Derivative gain that helps dampen the response and reduce overshoot, small to avoid noise amplification
 
         # Pitch (Tilt/Y-axis) PID gains
-        self.declare_parameter('kp_pitch', 0.04) # Proportional gain that gives a good velocity response without too much overshoot
-        self.declare_parameter('ki_pitch', 0.001) # Integral gain that helps eliminate steady-state error, small to avoid instability
-        self.declare_parameter('kd_pitch', 0.005) # Derivative gain that helps dampen the response and reduce overshoot, small to avoid noise amplification
+        self.declare_parameter('kp_pitch', 0.04) 
+        self.declare_parameter('ki_pitch', 0.001) 
+        self.declare_parameter('kd_pitch', 0.005) 
 
         # Yaw (Pan/Z-axis) PID gains
         self.declare_parameter('kp_yaw', 0.04)
@@ -41,7 +41,7 @@ class PIDControlNode(Node):
         self.prev_error_roll = 0.0
         self.prev_error_pitch = 0.0
         self.prev_error_yaw = 0.0
-        # self.last_time = self.get_clock().now()
+        self.last_time = self.get_clock().now()
 
         # Feedback variables
         self.current_roll_angle = 0.0
@@ -101,12 +101,12 @@ class PIDControlNode(Node):
 
         # Calculate time difference (dt)
         # -----------------------------------------------------------------
-        # current_time = self.get_clock().now()
-        # dt_duration = current_time - self.last_time
-        # dt = dt_duration.nanoseconds / 1e9  # Convert nanoseconds to seconds
+        current_time = self.get_clock().now()
+        dt_duration = current_time - self.last_time
+        dt = dt_duration.nanoseconds / 1e9  # Convert nanoseconds to seconds
         # -----------------------------------------------------------------
         # Or use dt as the fixed sample time:
-        dt = 0.1  # Assuming a fixed control loop of 10 Hz (0.1 seconds)
+        # dt = 0.1  # Assuming a fixed control loop of 10 Hz (0.1 seconds)
 
         # Prevent division by zero on the very first callback or fast bursts
         if dt <= 0.0:
@@ -216,7 +216,7 @@ class PIDControlNode(Node):
         self.prev_error_roll = error_roll
         self.prev_error_pitch = error_pitch
         self.prev_error_yaw = error_yaw
-        # self.last_time = current_time
+        self.last_time = current_time
 
         # Debugging output (can be commented out during actual operation)
         self.get_logger().debug(f'PID OUT -> Roll: {control_roll:.2f}, Pitch: {control_pitch:.2f}, Yaw: {control_yaw:.2f}, (dt: {dt:.3f}s)')
