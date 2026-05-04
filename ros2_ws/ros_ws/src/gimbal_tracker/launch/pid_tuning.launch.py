@@ -35,4 +35,10 @@ def generate_launch_description():
                 ('/control', '/turtle2/cmd_vel')
             ]
         )
+
+        # ros2 run turtlesim turtle_teleop_key
+        # Commands to change parameters in real-time (using ros2 param set):
+        # ros2 param set /pid_controller kp_* <float_value>
+        # ros2 param set /pid_controller ki_* <float_value>
+        # ros2 param set /pid_controller kd_* <float_value>
     ])
