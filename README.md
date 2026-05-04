@@ -76,5 +76,5 @@ source install/setup.bash
 ros2 launch gimbal_tracker complete.launch.py
 ```
 
-To mitigate system latency and reduce CPU load during execution, you can adjust the resize factor within the `complete.launch.py` file in the ArUco Detector section.
+To mitigate system latency and reduce CPU load during execution, you can adjust the resize factor within the `complete.launch.py` file in the ArUco Detector section.  
 **Note**: This parameter requires a floating-point value between 0.0 and 1.0 (e.g. {'resize_factor': 0.5}).
