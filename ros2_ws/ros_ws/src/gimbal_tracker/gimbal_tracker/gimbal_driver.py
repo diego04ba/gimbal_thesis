@@ -155,9 +155,9 @@ class GimbalDriver(Node):
                             
                                 # self.get_logger().info(f"Payload length: {len(payload)} | Data: {payload.hex()}")
 
-                                # Assume offset values for older 8-bit boards (e.g., 44, 46 and 48).
+                                # Assume offset values for older 8-bit boards (e.g., 38, 40 and 42).
                                 # 'h' means signed 16-bit integer. '<' means Little-Endian.
-                                # Change 44, 46 and 48 to the correct values you discover through debugging or the manual.
+                                # Change 38, 40 and 42 to the correct values you discover through debugging or the manual.
                                 roll_raw = struct.unpack_from('<h', payload, offset=38)[0]
                                 pitch_raw = struct.unpack_from('<h', payload, offset=40)[0]
                                 yaw_raw = struct.unpack_from('<h', payload, offset=42)[0]
