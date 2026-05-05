@@ -9,6 +9,7 @@
 # ==============================================================================
 
 import math
+import resource
 
 import rclpy
 from rclpy.node import Node
@@ -82,8 +83,7 @@ class GimbalDriver(Node):
 
         # Construct SBGC CMD_CONTROL Payload
         # Mode: 1 (Speed mode that ignores angle commands), Speed/Angle for Roll , Pitch, Yaw
-        payload = struct.pack(
-                              '<Bhhhhhh', # 13 bytes total
+        payload = struct.pack('<Bhhhhhh', # 13 bytes total
                               1, # Mode: Speed mode 
                               roll_speed, # Roll speed
                               0, #  Roll angle 
@@ -91,7 +91,7 @@ class GimbalDriver(Node):
                               0, # Pitch angle 
                               yaw_speed,
                               0 # Yaw angle
-                              )
+)
         
         # Checksum calculation
         cmd_id = 67 # 'C' for CMD_CONTROL
@@ -180,6 +180,11 @@ class GimbalDriver(Node):
         return None
 
 def main(args=None):
+    try:
+        # Setting Core Dump limit to 0 (Soft limit, Hard limit)
+        resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+    except Exception as e:
+        print(f"Could not disable core dumps: {e}")
     rclpy.init(args=args)
     node = GimbalDriver()
     try:

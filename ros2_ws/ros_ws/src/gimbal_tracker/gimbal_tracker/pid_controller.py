@@ -51,28 +51,14 @@ class PIDControlNode(Node):
 
         # Subscribers
         # Subscribing to ArUco pixel error (Target offset from center)
-        self.error_sub = self.create_subscription(
-            Point,
-            '/position',
-            self.error_callback,
-            10
-        )
+        self.error_sub = self.create_subscription(Point,'/position',self.error_callback,10)
         
         # Subscribing to Gimbal IMU feedback (Current angles)
-        self.feedback_sub = self.create_subscription(
-            Twist,
-            '/feedback',
-            self.feedback_callback,
-            10
-        )
+        self.feedback_sub = self.create_subscription(Twist,'/feedback',self.feedback_callback,10)
 
         # Publisher
         # Publishes the calculated control signal (Speed or Angle correction) to the Gimbal Driver
-        self.control_pub = self.create_publisher(
-            Twist,
-            '/control',
-            10
-        )
+        self.control_pub = self.create_publisher(Twist,'/control',10)
 
         self.last_target_time = self.get_clock().now() # To track when we last received a target position.
         self.target_timeout = 0.5 
@@ -100,20 +86,15 @@ class PIDControlNode(Node):
 
 
         # Calculate time difference (dt)
-        # -----------------------------------------------------------------
         current_time = self.get_clock().now()
         dt_duration = current_time - self.last_time
         dt = dt_duration.nanoseconds / 1e9  # Convert nanoseconds to seconds
-        # -----------------------------------------------------------------
-        # Or use dt as the fixed sample time:
-        # dt = 0.1  # Assuming a fixed control loop of 10 Hz (0.1 seconds)
 
         # Prevent division by zero on the very first callback or fast bursts, and lags in the system.
         if dt <= 0.0:
             return
         if dt >= 0.5:
             dt = 0.1 
-            return
 
         # Fetch current tunable gains
 
@@ -188,26 +169,6 @@ class PIDControlNode(Node):
         control_roll = max(min(control_roll, MAX_SPEED), -MAX_SPEED)
         control_pitch = max(min(control_pitch, MAX_SPEED), -MAX_SPEED)
         control_yaw = max(min(control_yaw, MAX_SPEED), -MAX_SPEED)
-
-        # --------------------------------------------------------------------------------------------------------------------------
-        # Removed this type of anti-windup.
-        # Implementing the Anti-Windup structure for the integral term,
-        # When the control detects from the feedback that the gimbal has reached its physical limit,
-        # it resets the integral term to prevent it from accumulating further and causing overshoot when the target moves back within range.
-        # I need to determine the physical limits of the gimbal in terms of pitch and yaw angles, for now I'll use some reasonable assumptions based on typical gimbal capabilities. 
-        # These limits can be adjusted based on the actual hardware specifications.
-        
-        # This limits were found on the ModalAI's technical documentation for the BGC, but they can be further tuned based on real-world testing and the specific gimbal model used.
-        # if abs(self.current_pitch_angle) >= PITCH_LIMIT:
-        #     self.integral_pitch = 0.0
-        #     if (self.current_pitch_angle * control_pitch) > 0:
-        #         control_pitch = 0.0 # Stop pitch movement if it's trying to move further in the same direction as the current pitch angle
-
-        # if abs(self.current_yaw_angle) >= YAW_LIMIT:
-        #     self.integral_yaw = 0.0
-        #     if (self.current_yaw_angle * control_yaw) > 0:
-        #        control_yaw = 0.0 # Stop yaw movement if it's trying to move further in the same direction as the current yaw angle
-        # --------------------------------------------------------------------------------------------------------------------------
 
         # Publish the control signal
         control_msg = Twist()
