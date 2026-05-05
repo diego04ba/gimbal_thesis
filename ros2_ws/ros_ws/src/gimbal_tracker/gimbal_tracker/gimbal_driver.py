@@ -91,7 +91,7 @@ class GimbalDriver(Node):
                               0, # Pitch angle 
                               yaw_speed,
                               0 # Yaw angle
-)
+                              )
         
         # Checksum calculation
         cmd_id = 67 # 'C' for CMD_CONTROL
