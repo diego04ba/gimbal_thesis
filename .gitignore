@@ -2,6 +2,8 @@
 **/build/
 **/install/
 **/log/
+**/core
+**/core.*
 
 # Python cache
 __pycache__/

@@ -153,21 +153,22 @@ class GimbalDriver(Node):
                                 # Move the Gimbal by hand up and down: watch which bytes change in the terminal.
                                 # That will be your offset for the Pitch. Then do the same to the right/left for the Roll.
                             
-                                self.get_logger().info(f"Payload length: {len(payload)} | Data: {payload.hex()}")
+                                # self.get_logger().info(f"Payload length: {len(payload)} | Data: {payload.hex()}")
 
-                                # Assume offset values for older 8-bit boards (e.g., 32, 34 and 36).
+                                # Assume offset values for older 8-bit boards (e.g., 44, 46 and 48).
                                 # 'h' means signed 16-bit integer. '<' means Little-Endian.
-                                # Change 32, 34 and 36 to the correct values you discover through debugging or the manual.
-                                roll_raw = struct.unpack_from('<h', payload, offset=32)[0]
-                                pitch_raw = struct.unpack_from('<h', payload, offset=34)[0]
-                                yaw_raw = struct.unpack_from('<h', payload, offset=36)[0]
+                                # Change 44, 46 and 48 to the correct values you discover through debugging or the manual.
+                                roll_raw = struct.unpack_from('<h', payload, offset=38)[0]
+                                pitch_raw = struct.unpack_from('<h', payload, offset=40)[0]
+                                yaw_raw = struct.unpack_from('<h', payload, offset=42)[0]
                             
-                                # BGC board maps angles with a resolution of 0.02197265625 degrees per unit
-                                # (This value is derived from 360 degrees / 16384)
-                                roll_deg = roll_raw * 0.02197265625
-                                pitch_deg = pitch_raw * 0.02197265625
-                                yaw_deg = yaw_raw * 0.02197265625 * 0 # Avoiding noise
+                                multiplier_8bit = 0.1
 
+                                roll_deg = roll_raw * multiplier_8bit
+                                pitch_deg = pitch_raw * multiplier_8bit
+                                yaw_deg = yaw_raw * multiplier_8bit * 0 # Avoiding noise
+
+                                self.get_logger().info(f"GIMBAL STATE -> Roll: {roll_deg:.2f}°, Pitch: {pitch_deg:.2f}°, Yaw: {yaw_deg:.2f}°", throttle_duration_sec=0.1)
                                 return {'roll': roll_deg, 'pitch': pitch_deg, 'yaw': yaw_deg}
                             
                             except struct.error as e:

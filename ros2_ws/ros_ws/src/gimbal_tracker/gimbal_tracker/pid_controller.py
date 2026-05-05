@@ -135,12 +135,12 @@ class PIDControlNode(Node):
         error_yaw = msg.x    # Positive X error means target is to the right
 
         # Implementing Clamping for the integral term to prevent windup when the gimbal is near its physical limits.
-        ROLL_INFERIOR_LIMIT = math.radians(-90.0)
-        ROLL_SUPERIOR_LIMIT = math.radians(90.0)
-        PITCH_INFERIOR_LIMIT = math.radians(-180.0)
-        PITCH_SUPERIOR_LIMIT = math.radians(180.0)
-        YAW_INFERIOR_LIMIT = math.radians(-45.0)
-        YAW_SUPERIOR_LIMIT = math.radians(45.0)
+        R_LIMIT_LOW_ZONE = [math.radians(-70.0), math.radians(-60.0)]
+        R_LIMIT_HIGH_ZONE = [math.radians(50.0), math.radians(60.0)]
+        P_LIMIT_LOW_ZONE = [math.radians(-125.0), math.radians(-115.0)] 
+        P_LIMIT_HIGH_ZONE = [math.radians(-70.0), math.radians(-60.0)]
+        Y_LIMIT_LOW_ZONE = [math.radians(-70.0), math.radians(-60.0)]
+        Y_LIMIT_HIGH_ZONE = [math.radians(60.0), math.radians(70.0)]
         # Implementing Deadband for the error to prevent the controller from reacting to very small errors.
         DEADBAND = 5.0 # pixels
 
@@ -149,7 +149,9 @@ class PIDControlNode(Node):
             error_roll = 0.0
         p_roll = kp_roll * error_roll
         i_roll = ki_roll * self.integral_roll
-        if self.current_roll_angle <= ROLL_SUPERIOR_LIMIT and self.current_roll_angle >= ROLL_INFERIOR_LIMIT: # Anti-windup
+        is_roll_blocked = (R_LIMIT_LOW_ZONE[0] <= self.current_roll_angle <= R_LIMIT_LOW_ZONE[1]) or \
+                          (R_LIMIT_HIGH_ZONE[0] <= self.current_roll_angle <= R_LIMIT_HIGH_ZONE[1])
+        if not is_roll_blocked: # Anti-windup
             self.integral_roll += error_roll * dt
             i_roll = ki_roll * self.integral_roll
         d_roll = kd_roll * ((error_roll - self.prev_error_roll) / dt)
@@ -160,7 +162,9 @@ class PIDControlNode(Node):
             error_pitch = 0.0
         p_pitch = kp_pitch * error_pitch
         i_pitch = ki_pitch * self.integral_pitch
-        if self.current_pitch_angle <= PITCH_SUPERIOR_LIMIT and self.current_pitch_angle >= PITCH_INFERIOR_LIMIT:
+        is_pitch_blocked = (P_LIMIT_LOW_ZONE[0] <= self.current_pitch_angle <= P_LIMIT_LOW_ZONE[1]) or \
+                           (P_LIMIT_HIGH_ZONE[0] <= self.current_pitch_angle <= P_LIMIT_HIGH_ZONE[1])
+        if not is_pitch_blocked:
             self.integral_pitch += error_pitch * dt
             i_pitch = ki_pitch * self.integral_pitch
         d_pitch = kd_pitch * ((error_pitch - self.prev_error_pitch) / dt)
@@ -171,7 +175,9 @@ class PIDControlNode(Node):
             error_yaw = 0.0
         p_yaw = kp_yaw * error_yaw
         i_yaw = ki_yaw * self.integral_yaw
-        if self.current_yaw_angle <= YAW_SUPERIOR_LIMIT and self.current_yaw_angle >= YAW_INFERIOR_LIMIT:
+        is_yaw_blocked = (Y_LIMIT_LOW_ZONE[0] <= self.current_yaw_angle <= Y_LIMIT_LOW_ZONE[1]) or \
+                         (Y_LIMIT_HIGH_ZONE[0] <= self.current_yaw_angle <= Y_LIMIT_HIGH_ZONE[1])
+        if not is_yaw_blocked:
             self.integral_yaw += error_yaw * dt
             i_yaw = ki_yaw * self.integral_yaw
         d_yaw = kd_yaw * ((error_yaw - self.prev_error_yaw) / dt)
@@ -245,8 +251,7 @@ class PIDControlNode(Node):
             stop_msg.linear.z = 0.0
             self.control_pub.publish(stop_msg)
 
-            self.get_logger().warning('No target detected for {:.2f} seconds.'.format(time_since_last_target), 
-            throttle_duration_sec=1.0)
+            # self.get_logger().warning('No target detected for {:.2f} seconds.'.format(time_since_last_target), throttle_duration_sec=1.0)
 
 def main(args=None):
     rclpy.init(args=args)
