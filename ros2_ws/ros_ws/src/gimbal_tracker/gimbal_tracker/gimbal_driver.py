@@ -38,6 +38,7 @@ class GimbalDriver(Node):
         # ROS Interface
         # Subscribe to PID output
         self.control_sub = self.create_subscription(Twist, '/control', self.control_callback, 10)
+        self.test_timer = self.create_timer(0.1, self.test_send_control)
         
         # Publish Feedback to PID
         self.feedback_pub = self.create_publisher(Twist, '/feedback', 10)
@@ -76,6 +77,16 @@ class GimbalDriver(Node):
 
                 self.feedback_pub.publish(feedback_msg)
 
+    def test_send_control(self):
+        # This function is for testing purposes. It sends a simple oscillating command to the BGC to verify communication.
+        if self.ser and self.ser.is_open:
+            t = self.get_clock().now().nanoseconds / 1e9
+            roll_cmd = 0.5 * math.sin(2 * math.pi * 0.5 * t) # Oscillates between -0.5 and 0.5
+            pitch_cmd = 0.5 * math.cos(2 * math.pi * 0.5 * t) # Oscillates between -0.5 and 0.5
+            yaw_cmd = 0.0 # No yaw command for testing
+
+            self.send_sbgc_control(roll=roll_cmd, pitch=pitch_cmd, yaw=yaw_cmd)
+
     def send_sbgc_control(self, roll, pitch, yaw):
         # Convert Float ROS to Int16 for SBGC
         # Using a multiplier to convert PID output to a suitable range for the BGC
@@ -87,8 +98,8 @@ class GimbalDriver(Node):
         yaw_speed = int(yaw * multiplier * 0) # Avoiding noise 
 
         # Construct SBGC CMD_CONTROL Payload
-        payload = struct.pack('<BBBhhhhhh', # 15 bytes total
-                              1, 1, 1, # Mode: Speed mode 
+        payload = struct.pack('<Bhhhhhh', # 13 bytes total
+                              1, # Mode: Speed mode 
                               roll_speed, 0, # Roll
                               pitch_speed, 0, # Pitch
                               yaw_speed, 0 # Yaw
