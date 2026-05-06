@@ -80,7 +80,7 @@ class GimbalDriver(Node):
         # Convert Float ROS to Int16 for SBGC
         # Using a multiplier to convert PID output to a suitable range for the BGC
         # Tuning may be required if too slow or too fast.
-        multiplier = 100.0
+        multiplier = 450.0
 
         roll_speed = int(roll * multiplier)
         pitch_speed = int(pitch * multiplier)
@@ -88,7 +88,7 @@ class GimbalDriver(Node):
 
         # Construct SBGC CMD_CONTROL Payload
         payload = struct.pack('<Bhhhhhh', # 13 bytes total
-                              2, # Mode: Speed mode 
+                              1, # Mode: Speed mode 
                               roll_speed, # Roll speed
                               0, #  Roll angle 
                               pitch_speed,
@@ -101,7 +101,7 @@ class GimbalDriver(Node):
         cmd_id = 67 # 'C' for CMD_CONTROL
         payload_size = len(payload)
         header_checksum = (cmd_id + payload_size) % 256
-        payload_checksum = sum(payload) % 256
+        payload_checksum = int(sum(payload)) & 0xFF
 
         # Assemble the final packet
         packet = struct.pack('<cBBB', b'>', cmd_id, payload_size, header_checksum) + payload + struct.pack('<B', payload_checksum)
@@ -173,7 +173,7 @@ class GimbalDriver(Node):
                                 pitch_deg = pitch_raw * multiplier_8bit
                                 yaw_deg = yaw_raw * multiplier_8bit * 0 # Avoiding noise
 
-                                # self.get_logger().info(f"GIMBAL STATE -> Roll: {roll_deg:.2f}°, Pitch: {pitch_deg:.2f}°, Yaw: {yaw_deg:.2f}°")
+                                self.get_logger().info(f"GIMBAL STATE -> Roll: {roll_deg:.2f}°, Pitch: {pitch_deg:.2f}°, Yaw: {yaw_deg:.2f}°")
                                 return {'roll': roll_deg, 'pitch': pitch_deg, 'yaw': yaw_deg}
                             
                             except struct.error as e:
