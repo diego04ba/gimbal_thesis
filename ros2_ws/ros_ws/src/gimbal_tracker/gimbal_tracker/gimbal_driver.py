@@ -87,21 +87,18 @@ class GimbalDriver(Node):
         yaw_speed = int(yaw * multiplier * 0) # Avoiding noise 
 
         # Construct SBGC CMD_CONTROL Payload
-        payload = struct.pack('<Bhhhhhh', # 13 bytes total
-                              1, # Mode: Speed mode 
-                              roll_speed, # Roll speed
-                              0, #  Roll angle 
-                              pitch_speed,
-                              0, # Pitch angle 
-                              yaw_speed,
-                              0 # Yaw angle
+        payload = struct.pack('<BBBhhhhhh', # 15 bytes total
+                              1, 1, 1, # Mode: Speed mode 
+                              roll_speed, 0, # Roll
+                              pitch_speed, 0, # Pitch
+                              yaw_speed, 0 # Yaw
                               )
         
         # Checksum calculation
         cmd_id = 67 # 'C' for CMD_CONTROL
         payload_size = len(payload)
         header_checksum = (cmd_id + payload_size) % 256
-        payload_checksum = int(sum(payload)) & 0xFF
+        payload_checksum = sum(payload) % 256
 
         # Assemble the final packet
         packet = struct.pack('<cBBB', b'>', cmd_id, payload_size, header_checksum) + payload + struct.pack('<B', payload_checksum)
@@ -109,7 +106,6 @@ class GimbalDriver(Node):
         # Send the packet over serial
         try:
             self.ser.write(packet)
-            self.ser.flush() 
         except Exception as e:
             self.get_logger().error(f"Failed to send control command: {e}")
 
@@ -173,7 +169,7 @@ class GimbalDriver(Node):
                                 pitch_deg = pitch_raw * multiplier_8bit
                                 yaw_deg = yaw_raw * multiplier_8bit * 0 # Avoiding noise
 
-                                self.get_logger().info(f"GIMBAL STATE -> Roll: {roll_deg:.2f}°, Pitch: {pitch_deg:.2f}°, Yaw: {yaw_deg:.2f}°")
+                                self.get_logger().info(f"GIMBAL STATE -> Roll: {roll_deg:.2f}°, Pitch: {pitch_deg:.2f}°, Yaw: {yaw_deg:.2f}°", throttle_duration_sec=1.0)
                                 return {'roll': roll_deg, 'pitch': pitch_deg, 'yaw': yaw_deg}
                             
                             except struct.error as e:

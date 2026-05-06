@@ -114,7 +114,7 @@ class ArucoNode(Node):
                     # Logging the error for debugging purposes
                     # self.get_logger().info(f'TARGET ID {self.target_id} - Error X: {real_error_x:.2f}, Y: {real_error_y:.2f}', throttle_duration_sec=1.0)
                 else:
-                    self.get_logger().info(f'Marker ID {self.target_id} not found.', once=False, throttle_duration_sec=1.0)
+                    self.get_logger().info(f'Marker ID {self.target_id} not found.', once=False, throttle_duration_sec=10.0)
 
         except Exception as e:
             self.get_logger().error(f'Error in callback: {str(e)}')
@@ -124,7 +124,7 @@ class ArucoNode(Node):
         time_since_last_marker = (current_time - self.last_marker_time).nanoseconds / 1e9
 
         if time_since_last_marker > self.marker_timeout:
-            self.get_logger().warn(f'No marker detected for {time_since_last_marker:.2f} seconds. Check camera feed or marker visibility.')
+            self.get_logger().warn(f'No marker detected for {time_since_last_marker:.2f} seconds. Check camera feed or marker visibility.', throttle_duration_sec=10.0)
 
 def main(args=None):
     rclpy.init(args=args)
