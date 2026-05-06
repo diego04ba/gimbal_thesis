@@ -38,7 +38,7 @@ class ArucoNode(Node):
         self.publisher_ = self.create_publisher(Point, '/position', 10)
 
         self.last_marker_time = self.get_clock().now()
-        self.marker_timeout = 5.0
+        self.marker_timeout = 10.0
         self.watchdog_timer = self.create_timer(5, self.watchdog_callback)
 
         self.target_fps = 20.0
@@ -112,7 +112,7 @@ class ArucoNode(Node):
                     self.publisher_.publish(error_msg)
 
                     # Logging the error for debugging purposes
-                    self.get_logger().info(f'TARGET ID {self.target_id} - Error X: {real_error_x:.2f}, Y: {real_error_y:.2f}')
+                    # self.get_logger().info(f'TARGET ID {self.target_id} - Error X: {real_error_x:.2f}, Y: {real_error_y:.2f}', throttle_duration_sec=1.0)
                 else:
                     self.get_logger().info(f'Marker ID {self.target_id} not found.', once=False, throttle_duration_sec=1.0)
 

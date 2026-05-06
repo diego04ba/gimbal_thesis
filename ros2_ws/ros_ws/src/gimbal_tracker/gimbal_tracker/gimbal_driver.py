@@ -47,10 +47,15 @@ class GimbalDriver(Node):
 
     def control_callback(self, msg):
         # It receives Roll (x), Pitch (y) and Yaw (z) from the PID controller and sends them to the BGC.
-        if self.ser and self.ser.is_open:
-            # Prepare SBGC CMD_CONTROL packet
-            # Mode: 2 (Speed mode), Data: Roll speed, Pitch speed, Yaw speed
-            self.send_sbgc_control(roll=msg.angular.x, pitch=msg.angular.y, yaw=msg.angular.z)
+        if self.ser is None:
+            self.get_logger().error("Serial connection not established. Cannot send control commands.")
+            return
+        if not self.ser.is_open:
+            self.get_logger().error("Serial port is not open. Cannot send control commands.")
+            return
+        # Prepare SBGC CMD_CONTROL packet
+        # Mode: 2 (Speed mode), Data: Roll speed, Pitch speed, Yaw speed
+        self.send_sbgc_control(roll=msg.angular.x, pitch=msg.angular.y, yaw=msg.angular.z)
 
     def request_feedback_callback(self):
         # Informing the PID controller about the current angles of the gimbal by reading from the BGC and publishing to /feedback topic.
@@ -82,9 +87,8 @@ class GimbalDriver(Node):
         yaw_speed = int(yaw * multiplier * 0) # Avoiding noise 
 
         # Construct SBGC CMD_CONTROL Payload
-        # Mode: 1 (Speed mode that ignores angle commands), Speed/Angle for Roll , Pitch, Yaw
         payload = struct.pack('<Bhhhhhh', # 13 bytes total
-                              1, # Mode: Speed mode 
+                              2, # Mode: Speed mode 
                               roll_speed, # Roll speed
                               0, #  Roll angle 
                               pitch_speed,
@@ -105,6 +109,7 @@ class GimbalDriver(Node):
         # Send the packet over serial
         try:
             self.ser.write(packet)
+            self.ser.flush() 
         except Exception as e:
             self.get_logger().error(f"Failed to send control command: {e}")
 
@@ -168,7 +173,7 @@ class GimbalDriver(Node):
                                 pitch_deg = pitch_raw * multiplier_8bit
                                 yaw_deg = yaw_raw * multiplier_8bit * 0 # Avoiding noise
 
-                                self.get_logger().info(f"GIMBAL STATE -> Roll: {roll_deg:.2f}°, Pitch: {pitch_deg:.2f}°, Yaw: {yaw_deg:.2f}°", throttle_duration_sec=0.1)
+                                # self.get_logger().info(f"GIMBAL STATE -> Roll: {roll_deg:.2f}°, Pitch: {pitch_deg:.2f}°, Yaw: {yaw_deg:.2f}°")
                                 return {'roll': roll_deg, 'pitch': pitch_deg, 'yaw': yaw_deg}
                             
                             except struct.error as e:

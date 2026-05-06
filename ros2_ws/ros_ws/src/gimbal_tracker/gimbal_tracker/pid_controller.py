@@ -79,10 +79,10 @@ class PIDControlNode(Node):
         # In the real application the PID controller will not start calculating control outputs until it has received feedback 
         # from the gimbal to ensure it has the necessary state information to compute accurate corrections.
         # Commenting it for simulation purposes, but it should be uncommented in the real application.
-        if self.feedback_received == False:
-            self.get_logger().warning('Waiting for gimbal feedback on /feedback topic to start controlling...',
-                throttle_duration_sec=2.0)
-            return # Wait until we have received feedback from the gimbal to start controlling
+        # if self.feedback_received == False:
+            # self.get_logger().warning('Waiting for gimbal feedback on /feedback topic to start controlling...',
+                # throttle_duration_sec=2.0)
+            # return # Wait until we have received feedback from the gimbal to start controlling
 
 
         # Calculate time difference (dt)

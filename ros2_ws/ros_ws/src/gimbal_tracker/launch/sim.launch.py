@@ -29,6 +29,23 @@ def generate_launch_description():
             parameters=[{'resize_factor': 1.0}]
         ),
 
+        # PID Controller for Gimbal
+        Node(
+            package='gimbal_tracker',
+            executable='pid_controller',
+            name='pid_controller',
+            output='screen'
+        ),
+
+        # Gimbal Hardware Interface: modify serial port or baudrate as needed
+        Node(
+            package='gimbal_tracker',
+            executable='gimbal_driver',
+            name='gimbal_driver',
+            output='screen',
+            parameters=[{'serial_port': '/dev/ttyUSB0', 'baudrate': 115200}]
+        ),
+
         # RQT Image View to visualize the camera feed
         Node(
             package='rqt_image_view',
