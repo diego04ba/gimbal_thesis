@@ -19,7 +19,7 @@ class CameraNode(Node):
         self.br = CvBridge()
         
         # Publisher: sending frames to /image topic
-        self.publisher_ = self.create_publisher(Image, '/flir_camera/image_raw', 10)
+        self.publisher_ = self.create_publisher(Image, '/image_raw/compressed', 10)
         
         # Timer: 0.1s period for 10Hz sampling
         self.timer = self.create_timer(0.1, self.timer_callback)
