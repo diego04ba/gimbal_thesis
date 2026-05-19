@@ -28,7 +28,7 @@ class VideoSimNode(Node):
         else:
             self.get_logger().info(f'SUCCESS: Simulation started with file: {self.video_path}')
 
-        self.publisher_ = self.create_publisher(Image, '/flir_camera/image_raw', 10)
+        self.publisher_ = self.create_publisher(Image, '/image_raw/compressed', 10)
         
         self.timer_period = 0.03342245989  
         self.timer = self.create_timer(self.timer_period, self.timer_callback)

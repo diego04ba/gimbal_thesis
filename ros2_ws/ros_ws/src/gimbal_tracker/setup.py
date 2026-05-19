@@ -35,6 +35,7 @@ setup(
             'turtle_aruco_sim = gimbal_tracker.turtle_aruco_sim:main',
             'pid_controller = gimbal_tracker.pid_controller:main',
             'gimbal_driver = gimbal_tracker.gimbal_driver:main',
+            'axis_driver = gimbal_tracker.axis_driver:main',
         ],
     },
 )

@@ -7,15 +7,18 @@ RUN apt update -y && apt install -y \
     python3-numpy \
     wget \
     usbutils \
+    iputils-ping \
     ros-humble-cv-bridge \
     ros-humble-turtlesim \
     ros-humble-rqt-graph \
     ros-humble-rqt-image-view \ 
+    ros-humble-image-transport-plugins \
     ros-humble-example-interfaces \
     && rm -rf /var/lib/apt/lists/*
     # "ros2 run rqt_image_view rqt_image_view" to view the camera feed
 
-RUN pip3 install --no-cache-dir opencv-contrib-python-headless==4.8.0.74 --no-deps
+RUN pip3 install --default-timeout=1000 --no-cache-dir opencv-contrib-python-headless==4.8.0.74 --no-deps
+RUN pip3 install --default-timeout=1000 --no-cache-dir requests
 
 # Installing Spinnaker SDK dependencies
 RUN if [ ! -d /etc/ros/rosdep/sources.list.d/ ]; then rosdep init; fi && \

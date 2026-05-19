@@ -5,6 +5,7 @@ from rclpy.qos import qos_profile_sensor_data
 
 # Importing messages to use frames and give position errors
 from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Point
 
 # Importing OpenCV and ArUco libraries for marker detection
@@ -28,8 +29,8 @@ class ArucoNode(Node):
 
         # Subscribing to the /image topic to get frames
         self.subscription = self.create_subscription(
-            Image,
-            '/flir_camera/image_raw',
+            CompressedImage,
+            '/image_raw/compressed',
             self.image_callback,
             10)
         self.subscription  # prevent unused variable warning
@@ -61,7 +62,7 @@ class ArucoNode(Node):
             self.last_processed_time = current_time
 
             # Conversion of the ROS Image message to OpenCV format
-            cv_image = self.br.imgmsg_to_cv2(msg, desired_encoding='mono8')
+            cv_image = self.br.compressed_imgmsg_to_cv2(msg, desired_encoding='mono8')
 
             # Reducing the resolution for faster processing
             if self.resize_factor < 1.0 and self.resize_factor > 0.0:

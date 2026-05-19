@@ -22,17 +22,17 @@ class PIDControlNode(Node):
         # Roll (X-axis) PID gains
         self.declare_parameter('kp_roll', 0.025) # Proportional gain that gives a good velocity response without too much overshoot
         self.declare_parameter('ki_roll', 0.001) # Integral gain that helps eliminate steady-state error, small to avoid instability
-        self.declare_parameter('kd_roll', 0.012) # Derivative gain that helps dampen the response and reduce overshoot, small to avoid noise amplification
+        self.declare_parameter('kd_roll', 0.002) # Derivative gain that helps dampen the response and reduce overshoot, small to avoid noise amplification
 
         # Pitch (Tilt/Y-axis) PID gains
         self.declare_parameter('kp_pitch', 0.025) 
         self.declare_parameter('ki_pitch', 0.001) 
-        self.declare_parameter('kd_pitch', 0.012) 
+        self.declare_parameter('kd_pitch', 0.002) 
 
         # Yaw (Pan/Z-axis) PID gains
         self.declare_parameter('kp_yaw', 0.025)
         self.declare_parameter('ki_yaw', 0.001)
-        self.declare_parameter('kd_yaw', 0.012)
+        self.declare_parameter('kd_yaw', 0.002)
 
         # State Variables for PID calculations
         self.integral_roll = 0.0
@@ -116,12 +116,12 @@ class PIDControlNode(Node):
         error_yaw = msg.x    # Positive X error means target is to the right
 
         # Implementing Clamping for the integral term to prevent windup when the gimbal is near its physical limits.
-        R_LIMIT_LOW_ZONE = [math.radians(-70.0), math.radians(-60.0)]
-        R_LIMIT_HIGH_ZONE = [math.radians(50.0), math.radians(60.0)]
-        P_LIMIT_LOW_ZONE = [math.radians(-125.0), math.radians(-115.0)] 
-        P_LIMIT_HIGH_ZONE = [math.radians(-70.0), math.radians(-60.0)]
-        Y_LIMIT_LOW_ZONE = [math.radians(-70.0), math.radians(-60.0)]
-        Y_LIMIT_HIGH_ZONE = [math.radians(60.0), math.radians(70.0)]
+        R_LIMIT_MIN = -45.0   
+        R_LIMIT_MAX = 45.0
+        P_LIMIT_MIN = -90.0 
+        P_LIMIT_MAX = 90.0  
+        Y_LIMIT_MIN = -170.0 
+        Y_LIMIT_MAX = 170.0
         # Implementing Deadband for the error to prevent the controller from reacting to very small errors.
         DEADBAND = 5.0 # pixels
 
@@ -130,8 +130,8 @@ class PIDControlNode(Node):
             error_roll = 0.0
         p_roll = kp_roll * error_roll
         i_roll = ki_roll * self.integral_roll
-        is_roll_blocked = (R_LIMIT_LOW_ZONE[0] <= self.current_roll_angle <= R_LIMIT_LOW_ZONE[1]) or \
-                          (R_LIMIT_HIGH_ZONE[0] <= self.current_roll_angle <= R_LIMIT_HIGH_ZONE[1])
+        is_roll_blocked = (self.current_roll_angle <= R_LIMIT_MIN) or \
+                          (self.current_roll_angle >= R_LIMIT_MAX)
         if not is_roll_blocked: # Anti-windup
             self.integral_roll += error_roll * dt
             i_roll = ki_roll * self.integral_roll
@@ -143,8 +143,8 @@ class PIDControlNode(Node):
             error_pitch = 0.0
         p_pitch = kp_pitch * error_pitch
         i_pitch = ki_pitch * self.integral_pitch
-        is_pitch_blocked = (P_LIMIT_LOW_ZONE[0] <= self.current_pitch_angle <= P_LIMIT_LOW_ZONE[1]) or \
-                           (P_LIMIT_HIGH_ZONE[0] <= self.current_pitch_angle <= P_LIMIT_HIGH_ZONE[1])
+        is_pitch_blocked = (P_LIMIT_MIN <= self.current_pitch_angle <= P_LIMIT_MIN) or \
+                           (P_LIMIT_MAX <= self.current_pitch_angle <= P_LIMIT_MAX)
         if not is_pitch_blocked:
             self.integral_pitch += error_pitch * dt
             i_pitch = ki_pitch * self.integral_pitch
@@ -156,8 +156,8 @@ class PIDControlNode(Node):
             error_yaw = 0.0
         p_yaw = kp_yaw * error_yaw
         i_yaw = ki_yaw * self.integral_yaw
-        is_yaw_blocked = (Y_LIMIT_LOW_ZONE[0] <= self.current_yaw_angle <= Y_LIMIT_LOW_ZONE[1]) or \
-                         (Y_LIMIT_HIGH_ZONE[0] <= self.current_yaw_angle <= Y_LIMIT_HIGH_ZONE[1])
+        is_yaw_blocked = (Y_LIMIT_MIN <= self.current_yaw_angle <= Y_LIMIT_MIN) or \
+                         (Y_LIMIT_MAX <= self.current_yaw_angle <= Y_LIMIT_MAX)
         if not is_yaw_blocked:
             self.integral_yaw += error_yaw * dt
             i_yaw = ki_yaw * self.integral_yaw
