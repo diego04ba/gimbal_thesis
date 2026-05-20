@@ -120,8 +120,8 @@ class PIDControlNode(Node):
         R_LIMIT_MAX = 45.0
         P_LIMIT_MIN = -90.0 
         P_LIMIT_MAX = 90.0  
-        Y_LIMIT_MIN = -170.0 
-        Y_LIMIT_MAX = 170.0
+        Y_LIMIT_MIN = -180.0 
+        Y_LIMIT_MAX = 180.0
         # Implementing Deadband for the error to prevent the controller from reacting to very small errors.
         DEADBAND = 5.0 # pixels
 

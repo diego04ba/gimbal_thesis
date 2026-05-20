@@ -97,11 +97,6 @@ class GimbalDriver(Node):
         pitch_speed = int(pitch * multiplier)
         yaw_speed = int(yaw * multiplier * 0) # Avoiding noise 
 
-        self.get_logger().info(
-            f"[SBGC_TX] ROS: r={roll:.3f}, p={pitch:.3f}, y={yaw:.3f} | "
-            f"SPEED: R={roll_speed}, P={pitch_speed}, Y={yaw_speed}"
-        )
-
         # Construct SBGC CMD_CONTROL Payload
         payload = struct.pack('<Bhhhhhh', # 13 bytes total
                               1, # Mode: Speed mode 
@@ -116,13 +111,8 @@ class GimbalDriver(Node):
         header_checksum = (cmd_id + payload_size) % 256
         payload_checksum = sum(payload) % 256
 
-        self.get_logger().debug(f"[SBGC_TX] Size={payload_size}, Hdr_CHK={header_checksum}, Pld_CHK={payload_checksum}")
-
         # Assemble the final packet
         packet = struct.pack('<cBBB', b'>', cmd_id, payload_size, header_checksum) + payload + struct.pack('<B', payload_checksum)
-
-        hex_string = ' '.join(f'{byte:02X}' for byte in packet)
-        self.get_logger().info(f"[SBGC_TX] RAW HEX: {hex_string}")
         
         # Send the packet over serial
         try:
