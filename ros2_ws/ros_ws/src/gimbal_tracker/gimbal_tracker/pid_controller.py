@@ -143,8 +143,8 @@ class PIDControlNode(Node):
             error_pitch = 0.0
         p_pitch = kp_pitch * error_pitch
         i_pitch = ki_pitch * self.integral_pitch
-        is_pitch_blocked = (P_LIMIT_MIN <= self.current_pitch_angle <= P_LIMIT_MIN) or \
-                           (P_LIMIT_MAX <= self.current_pitch_angle <= P_LIMIT_MAX)
+        is_pitch_blocked = (self.current_pitch_angle <= P_LIMIT_MIN) or \
+                           (self.current_pitch_angle >= P_LIMIT_MAX)
         if not is_pitch_blocked:
             self.integral_pitch += error_pitch * dt
             i_pitch = ki_pitch * self.integral_pitch
@@ -156,8 +156,8 @@ class PIDControlNode(Node):
             error_yaw = 0.0
         p_yaw = kp_yaw * error_yaw
         i_yaw = ki_yaw * self.integral_yaw
-        is_yaw_blocked = (Y_LIMIT_MIN <= self.current_yaw_angle <= Y_LIMIT_MIN) or \
-                         (Y_LIMIT_MAX <= self.current_yaw_angle <= Y_LIMIT_MAX)
+        is_yaw_blocked = (self.current_yaw_angle <= Y_LIMIT_MIN) or \
+                         (self.current_yaw_angle >= Y_LIMIT_MAX)
         if not is_yaw_blocked:
             self.integral_yaw += error_yaw * dt
             i_yaw = ki_yaw * self.integral_yaw
