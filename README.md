@@ -29,11 +29,13 @@ xhost +local:root
 
 ### 2. Axis PTZ Camera Configuration
 This system is designed to be compatible with several Axis PTZ models, including:
-- Axis Q198-LE
-- Axis Q62
-- Axis M55 series (e.g., M5525-E)
+* Axis Q198-LE
+* Axis Q62
+* Axis M55 series (e.g., M5525-E)
+
 **Network Setup**: Use the AXIS IP Utility software to find the camera's IP address and ensure the IPv4 address matches the one specified in `ptz_complete.launch.py`. 
 The system uses encrypted Digest authentication by default. If you have set up a custom username and password on the camera, remember to update these parameters in the launch file.
+
 **Troubleshooting Network Connectivity (Ubuntu)**: If your PC fails to reach the camera (e.g., if connected directly via Ethernet without a DHCP router), your network interface might require a static IP configuration. You can force the connection using `nmcli` in the terminal:
 ```bash
 # Create a static profile for the Ethernet port (adjust 'eth0' if your interface name differs)
