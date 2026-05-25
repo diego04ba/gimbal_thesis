@@ -61,7 +61,7 @@ class PIDControlNode(Node):
         self.control_pub = self.create_publisher(Twist,'/control',10)
 
         self.last_target_time = self.get_clock().now() # To track when we last received a target position.
-        self.target_timeout = 0.5 
+        self.target_timeout = 0.2 
         self.watchdog_timer = self.create_timer(0.1, self.watchdog_callback) # Timer to check for target timeout
 
         self.get_logger().info('PID Control Node initialized.')
@@ -93,7 +93,7 @@ class PIDControlNode(Node):
         # Prevent division by zero on the very first callback or fast bursts, and lags in the system.
         if dt <= 0.0:
             return
-        if dt >= 0.5:
+        if dt >= 0.2:
             dt = 0.1 
 
         # Fetch current tunable gains

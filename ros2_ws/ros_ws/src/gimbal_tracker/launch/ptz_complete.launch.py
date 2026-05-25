@@ -14,9 +14,9 @@ def generate_launch_description():
         ),
         # To change settings, modify the driver_node.launch.py in the axis_camera package.
         launch_arguments={
-            'hostname': '192.168.1.100',
-            'username': 'diego',
-            'password': 'c3labd2026',
+            'hostname': '192.168.0.90',
+            'username': 'root',
+            'password': 'pass',
             'use_encrypted_password': 'true' # true using DigestAuth, false if BasicAuth is used in axis_driver.py code and web app panel
         }.items()
     )
@@ -44,7 +44,7 @@ def generate_launch_description():
             executable='axis_driver',
             name='axis_driver',
             output='screen',
-            parameters=[{'ip': '192.168.1.100', 'user': 'diego', 'password': 'c3labd2026'}]
+            parameters=[{'ip': '192.168.0.90', 'user': 'root', 'password': 'pass'}]
         )
 
         # RQT Image View to visualize the camera feed

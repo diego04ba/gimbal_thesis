@@ -25,7 +25,7 @@ class AxisDriver(Node):
         self.subscription = self.create_subscription(Twist,'/control',self.ptz_control_callback,10)
         
         self.publisher = self.create_publisher(Twist, '/feedback',10)
-        self.timer = self.create_timer(0.5, self.ptz_feedback)
+        self.timer = self.create_timer(0.2, self.ptz_feedback)
         self.is_requesting_feedback = False
 
     def ptz_control_callback(self, msg):
@@ -37,7 +37,7 @@ class AxisDriver(Node):
         url = f"http://{self.ip}/axis-cgi/com/ptz.cgi"
         params = {'continuouspantiltmove': f"{pan_speed},{tilt_speed}"}
         try:
-            self.session.get(url, params=params, timeout=0.05)
+            self.session.get(url, params=params, timeout=0.1)
         except requests.exceptions.RequestException:
             pass
     
