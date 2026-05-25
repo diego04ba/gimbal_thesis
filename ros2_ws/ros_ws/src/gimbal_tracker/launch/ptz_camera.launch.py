@@ -14,7 +14,7 @@ def generate_launch_description():
         ),
         # To change settings, modify the driver_node.launch.py in the axis_camera package.
         launch_arguments={
-            'hostname': '169.254.26.214',
+            'hostname': '192.168.0.90',
             'username': 'root',
             'password': 'pass',
             'use_encrypted_password': 'true' # true using DigestAuth, false if BasicAuth is used in axis_driver.py code and web app panel

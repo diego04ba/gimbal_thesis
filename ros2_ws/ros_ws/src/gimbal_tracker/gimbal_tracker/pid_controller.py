@@ -20,19 +20,19 @@ class PIDControlNode(Node):
         # ros2 param set /pid_controller kd_* <float_value>
 
         # Roll (X-axis) PID gains
-        self.declare_parameter('kp_roll', 0.025) # Proportional gain that gives a good velocity response without too much overshoot
-        self.declare_parameter('ki_roll', 0.001) # Integral gain that helps eliminate steady-state error, small to avoid instability
-        self.declare_parameter('kd_roll', 0.002) # Derivative gain that helps dampen the response and reduce overshoot, small to avoid noise amplification
+        self.declare_parameter('kp_roll', 0.005) # Proportional gain that gives a good velocity response without too much overshoot
+        self.declare_parameter('ki_roll', 0.005) # Integral gain that helps eliminate steady-state error, small to avoid instability
+        self.declare_parameter('kd_roll', 0.0001) # Derivative gain that helps dampen the response and reduce overshoot, small to avoid noise amplification
 
         # Pitch (Tilt/Y-axis) PID gains
-        self.declare_parameter('kp_pitch', 0.025) 
-        self.declare_parameter('ki_pitch', 0.001) 
-        self.declare_parameter('kd_pitch', 0.002) 
+        self.declare_parameter('kp_pitch', 0.015) 
+        self.declare_parameter('ki_pitch', 0.01) 
+        self.declare_parameter('kd_pitch', 0.0001) 
 
         # Yaw (Pan/Z-axis) PID gains
-        self.declare_parameter('kp_yaw', 0.025)
-        self.declare_parameter('ki_yaw', 0.001)
-        self.declare_parameter('kd_yaw', 0.002)
+        self.declare_parameter('kp_yaw', 0.005)
+        self.declare_parameter('ki_yaw', 0.005)
+        self.declare_parameter('kd_yaw', 0.0001)
 
         # State Variables for PID calculations
         self.integral_roll = 0.0
@@ -119,7 +119,7 @@ class PIDControlNode(Node):
         R_LIMIT_MIN = -45.0   
         R_LIMIT_MAX = 45.0
         P_LIMIT_MIN = -90.0 
-        P_LIMIT_MAX = 90.0  
+        P_LIMIT_MAX = 0.0
         Y_LIMIT_MIN = -180.0 
         Y_LIMIT_MAX = 180.0
         # Implementing Deadband for the error to prevent the controller from reacting to very small errors.
