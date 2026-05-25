@@ -17,7 +17,7 @@ def generate_launch_description():
             'hostname': '192.168.0.90',
             'username': 'root',
             'password': 'pass',
-            'use_encrypted_password': 'true' # true using DigestAuth, false if BasicAuth is used in axis_driver.py code and web app panel
+            'use_encrypted_password': 'true'
         }.items()
     )
 

@@ -27,7 +27,7 @@ class ArucoNode(Node):
         # Creating Bridge 
         self.br = CvBridge()
 
-        # Subscribing to the /image topic to get frames
+        # Subscribing to the /image_raw/compressed topic to get frames from the Device camera
         self.subscription = self.create_subscription(
             CompressedImage,
             '/image_raw/compressed',

@@ -1,8 +1,77 @@
-# Gimbal Target Tracking System (ROS2)
+# Target Tracking System (ROS2)
 
 This project implements a real-time automated target tracking system based on ROS2 Humble. The system integrates industrial computer vision and PID control to enable a 2-axis gimbal to follow a visual reference (ArUco Marker).
+**Note**: The project initially utilized a FLIR camera and a separate gimbal stabilizer. However, due to hardware limitations, it has been transitioned to a fully integrated PTZ (Pan-Tilt-Zoom) camera system.
 
 ## System Overview
+The system captures video frames directly from the PTZ camera, detects the ArUco marker's position, and calculates the pixel error relative to the frame center. A PID controller processes this error to generate velocity commands, which are sent to the camera's Pan-Tilt motors via HTTP requests (Axis VAPIX protocol).
+
+## Hardware Specifications
+*   **PTZ Camera:** PTZ AXIS M5525-E - Network Camera provided by Axis Communication.
+*   **Communication Protocol:** HTTP (VAPIX API).
+
+## Software Architecture
+The project consists of four main ROS2 nodes:
+1.  **axis_camera**: Official driver for image acquisition from the Axis PTZ Camera.
+2.  **aruco_detector**: Processes camera frames to detect markers and publishes pixel errors. 
+3.  **pid_controller**: Implements the control logic. 
+4.  **axis_driver**: The hardware interface that translates ROS Twist messages into HTTP requests to drive the PTZ motors.
+
+## Installation and Setup
+
+### 1. Prerequisites
+Ensure X11 Server Utils are installed on the host machine to enable graphical output (rqt_image_view) from the Docker container:
+```bash
+sudo apt update && sudo apt install -y x11-xserver-utils
+xhost +local:root
+```
+
+
+### 2. Axis PTZ Camera Configuration
+This system is designed to be compatible with several Axis PTZ models, including:
+- Axis Q198-LE
+- Axis Q62
+- Axis M55 series (e.g., M5525-E)
+**Network Setup**: Use the AXIS IP Utility software to find the camera's IP address and ensure the IPv4 address matches the one specified in `ptz_complete.launch.py`. 
+The system uses encrypted Digest authentication by default. If you have set up a custom username and password on the camera, remember to update these parameters in the launch file.
+**Troubleshooting Network Connectivity (Ubuntu)**: If your PC fails to reach the camera (e.g., if connected directly via Ethernet without a DHCP router), your network interface might require a static IP configuration. You can force the connection using `nmcli` in the terminal:
+```bash
+# Create a static profile for the Ethernet port (adjust 'eth0' if your interface name differs)
+sudo nmcli con add con-name "Telecamera_Axis" ifname eth0 type ethernet ipv4.addresses 192.168.0.100/24 ipv4.method manual
+# Activate the connection
+sudo nmcli con up "Telecamera_Axis"
+# Verify the connection (the default Axis fallback IP is usually 192.168.0.90)
+ping 192.168.0.90 # if it worked you should see something such as "64 bytes from 192.168.0.90: icmp_seq=1..."
+```
+
+
+### 3. Docker Build and Deployment
+The project uses a containerized environment to manage ROS2 Humble dependencies and OpenCV libraries using Docker. Use the provided automation scripts to build the image and launch the system:
+
+```bash
+# Build the Docker image containing ROS2 Humble and vision drivers
+./docker_ws/build_gimbal.sh
+
+# Grant X11 permissions and start the container with hardware access
+./run.sh
+```
+Inside the container, navigate to the ros_workspace directory (running the container should already take you there), build the package, and launch the system:
+
+```bash
+# Build the workspace
+cd ros_workspace/ # You should already be in this directory
+colcon build --symlink-install
+source install/setup.bash
+
+# To deploy the system
+ros2 launch gimbal_tracker ptz_complete.launch.py
+```
+
+**Performance Tuning**: To mitigate system latency and reduce CPU load during execution, you can adjust the resize factor within the `complete.launch.py` file in the ArUco Detector section.  
+**Note**: This parameter requires a floating-point value between 0.0 and 1.0 (e.g. {'resize_factor': 0.5}).
+
+
+## System Overview (OLD)
 The system captures frames from a FLIR camera, detects the ArUco marker's position, and calculates the pixel error relative to the frame center. A PID controller processes this error to generate velocity commands, which are sent to the gimbal controller via a serial binary protocol.
 
 ### Hardware Specifications
@@ -73,7 +142,7 @@ colcon build --symlink-install
 source install/setup.bash
 
 # To deploy the system
-ros2 launch gimbal_tracker complete.launch.py
+ros2 launch gimbal_tracker gimbal_complete.launch.py
 ```
 
 To mitigate system latency and reduce CPU load during execution, you can adjust the resize factor within the `complete.launch.py` file in the ArUco Detector section.  

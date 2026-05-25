@@ -25,7 +25,7 @@ class AxisDriver(Node):
         self.subscription = self.create_subscription(Twist,'/control',self.ptz_control_callback,10)
         
         self.publisher = self.create_publisher(Twist, '/feedback',10)
-        self.timer = self.create_timer(0.2, self.ptz_feedback)
+        self.timer = self.create_timer(0.1, self.ptz_feedback)
         self.is_requesting_feedback = False
 
     def ptz_control_callback(self, msg):
@@ -63,7 +63,7 @@ class AxisDriver(Node):
                     elif line.startswith('tilt='):
                         tilt_pos = float(line.split('=')[1])
                 
-                self.get_logger().info(f"PTZ STATE -> Pan: {pan_pos:.2f}°, Tilt: {tilt_pos:.2f}°", throttle_duration_sec=0.5)
+                # self.get_logger().info(f"PTZ STATE -> Pan: {pan_pos:.2f}°, Tilt: {tilt_pos:.2f}°", throttle_duration_sec=0.5)
 
                 feedback_msg = Twist()
                 feedback_msg.angular.z = pan_pos  

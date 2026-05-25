@@ -1,5 +1,5 @@
 # PID Controller Node for Gimbal Tracking:
-# it receives pixel error from ArUco detector and angle feedback from the Gimbal,
+# it receives pixel error from ArUco detector and angle feedback from the Device,
 # and computes the necessary speed/angle correction to center the target.
 import math
 import rclpy
@@ -24,12 +24,12 @@ class PIDControlNode(Node):
         self.declare_parameter('ki_roll', 0.005) # Integral gain that helps eliminate steady-state error, small to avoid instability
         self.declare_parameter('kd_roll', 0.0001) # Derivative gain that helps dampen the response and reduce overshoot, small to avoid noise amplification
 
-        # Pitch (Tilt/Y-axis) PID gains
+        # Pitch/Tilt (Y-axis) PID gains
         self.declare_parameter('kp_pitch', 0.015) 
         self.declare_parameter('ki_pitch', 0.01) 
         self.declare_parameter('kd_pitch', 0.0001) 
 
-        # Yaw (Pan/Z-axis) PID gains
+        # Yaw/Pan (Z-axis) PID gains
         self.declare_parameter('kp_yaw', 0.005)
         self.declare_parameter('ki_yaw', 0.005)
         self.declare_parameter('kd_yaw', 0.0001)
@@ -53,11 +53,11 @@ class PIDControlNode(Node):
         # Subscribing to ArUco pixel error (Target offset from center)
         self.error_sub = self.create_subscription(Point,'/position',self.error_callback,10)
         
-        # Subscribing to Gimbal IMU feedback (Current angles)
+        # Subscribing to Device IMU feedback (Current angles)
         self.feedback_sub = self.create_subscription(Twist,'/feedback',self.feedback_callback,10)
 
         # Publisher
-        # Publishes the calculated control signal (Speed or Angle correction) to the Gimbal Driver
+        # Publishes the calculated control signal (Speed or Angle correction) to the Device Driver
         self.control_pub = self.create_publisher(Twist,'/control',10)
 
         self.last_target_time = self.get_clock().now() # To track when we last received a target position.
@@ -67,23 +67,18 @@ class PIDControlNode(Node):
         self.get_logger().info('PID Control Node initialized.')
 
     def feedback_callback(self, msg):
-        # Update current angles from Gimbal feedback
+        # Update current angles from device feedback
         self.current_roll_angle = msg.angular.x
         self.current_pitch_angle = msg.angular.y
         self.current_yaw_angle = msg.angular.z
         self.feedback_received = True
 
     def error_callback(self, msg):
-        # Calculate PID control output based on the pixel error from ArUco and the current feedback from the Gimbal.
         self.last_target_time = self.get_clock().now() # Update the last time we received a target position.
-        # In the real application the PID controller will not start calculating control outputs until it has received feedback 
-        # from the gimbal to ensure it has the necessary state information to compute accurate corrections.
-        # Commenting it for simulation purposes, but it should be uncommented in the real application.
-        # if self.feedback_received == False:
-            # self.get_logger().warning('Waiting for gimbal feedback on /feedback topic to start controlling...',
-                # throttle_duration_sec=2.0)
-            # return # Wait until we have received feedback from the gimbal to start controlling
-
+        if self.feedback_received == False:
+            self.get_logger().warning('Waiting for PTZ feedback on /feedback topic to start controlling...',
+                throttle_duration_sec=2.0)
+            return # Wait until we have received feedback from the Device to start controlling
 
         # Calculate time difference (dt)
         current_time = self.get_clock().now()
@@ -115,13 +110,13 @@ class PIDControlNode(Node):
         error_pitch = msg.y  # Positive Y error means target is below center
         error_yaw = msg.x    # Positive X error means target is to the right
 
-        # Implementing Clamping for the integral term to prevent windup when the gimbal is near its physical limits.
+        # Implementing Clamping for the integral term to prevent windup when the Device is near its physical limits.
         R_LIMIT_MIN = -45.0   
         R_LIMIT_MAX = 45.0
         P_LIMIT_MIN = -90.0 
         P_LIMIT_MAX = 0.0
-        Y_LIMIT_MIN = -180.0 
-        Y_LIMIT_MAX = 180.0
+        Y_LIMIT_MIN = -360.0 
+        Y_LIMIT_MAX = 360.0
         # Implementing Deadband for the error to prevent the controller from reacting to very small errors.
         DEADBAND = 5.0 # pixels
 
@@ -138,7 +133,7 @@ class PIDControlNode(Node):
         d_roll = kd_roll * ((error_roll - self.prev_error_roll) / dt)
         control_roll = p_roll + i_roll + d_roll
 
-        # --- PITCH (Y-axis) PID Calculation ---
+        # --- PITCH/TILT (Y-axis) PID Calculation ---
         if abs(error_pitch) < DEADBAND:
             error_pitch = 0.0
         p_pitch = kp_pitch * error_pitch
@@ -151,7 +146,7 @@ class PIDControlNode(Node):
         d_pitch = kd_pitch * ((error_pitch - self.prev_error_pitch) / dt)
         control_pitch = p_pitch + i_pitch + d_pitch
 
-        # --- YAW (Z-axis) PID Calculation ---
+        # --- YAW/PAN (Z-axis) PID Calculation ---
         if abs(error_yaw) < DEADBAND:
             error_yaw = 0.0
         p_yaw = kp_yaw * error_yaw
@@ -164,6 +159,9 @@ class PIDControlNode(Node):
         d_yaw = kd_yaw * ((error_yaw - self.prev_error_yaw) / dt)
         control_yaw = p_yaw + i_yaw + d_yaw
 
+        # Debugging output for anti-windup status (can be commented out during actual operation)
+        self.get_logger().debug(f'Anti-Windup -> Roll: {"Blocked" if is_roll_blocked else "OK"}, Pitch: {"Blocked" if is_pitch_blocked else "OK"}, Yaw: {"Blocked" if is_yaw_blocked else "OK"}')
+
         # To avoid overshooting and to keep the control signal within reasonable limits, we can clamp the output to a maximum speed.
         MAX_SPEED = 2.0
         control_roll = max(min(control_roll, MAX_SPEED), -MAX_SPEED)
@@ -175,11 +173,6 @@ class PIDControlNode(Node):
         control_msg.angular.x = control_roll
         control_msg.angular.y = control_pitch 
         control_msg.angular.z = control_yaw
-
-        control_msg.linear.x = 0.0
-        control_msg.linear.y = 0.0
-        control_msg.linear.z = 0.0
-
         self.control_pub.publish(control_msg)
 
         # Update state for the next iteration
@@ -189,7 +182,7 @@ class PIDControlNode(Node):
         self.last_time = current_time
 
         # Debugging output (can be commented out during actual operation)
-        self.get_logger().debug(f'PID OUT -> Roll: {control_roll:.2f}, Pitch: {control_pitch:.2f}, Yaw: {control_yaw:.2f}, (dt: {dt:.3f}s)')
+        # self.get_logger().debug(f'PID OUT -> Roll: {control_roll:.2f}, Pitch: {control_pitch:.2f}, Yaw: {control_yaw:.2f}, (dt: {dt:.3f}s)')
     
     def watchdog_callback(self):
         # Check if we have not received a target position for a certain amount of time, and if so, reset the control outputs.
@@ -201,7 +194,7 @@ class PIDControlNode(Node):
             self.integral_roll = 0.0
             self.integral_pitch = 0.0
             self.integral_yaw = 0.0
-            # Publishing zero control signal to stop the gimbal movement when no target is detected.
+            # Publishing zero control signal to stop the device movement when no target is detected.
             stop_msg = Twist()
             stop_msg.angular.x = 0.0
             stop_msg.angular.y = 0.0
