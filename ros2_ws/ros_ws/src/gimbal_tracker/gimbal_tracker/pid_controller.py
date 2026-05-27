@@ -22,17 +22,17 @@ class PIDControlNode(Node):
         # Roll (X-axis) PID gains
         self.declare_parameter('kp_roll', 0.005) # Proportional gain that gives a good velocity response without too much overshoot
         self.declare_parameter('ki_roll', 0.005) # Integral gain that helps eliminate steady-state error, small to avoid instability
-        self.declare_parameter('kd_roll', 0.0001) # Derivative gain that helps dampen the response and reduce overshoot, small to avoid noise amplification
+        self.declare_parameter('kd_roll', 0.0003) # Derivative gain that helps dampen the response and reduce overshoot, small to avoid noise amplification
 
         # Pitch/Tilt (Y-axis) PID gains
-        self.declare_parameter('kp_pitch', 0.015) 
+        self.declare_parameter('kp_pitch', 0.005) 
         self.declare_parameter('ki_pitch', 0.01) 
-        self.declare_parameter('kd_pitch', 0.0001) 
+        self.declare_parameter('kd_pitch', 0.0003) 
 
         # Yaw/Pan (Z-axis) PID gains
         self.declare_parameter('kp_yaw', 0.005)
         self.declare_parameter('ki_yaw', 0.005)
-        self.declare_parameter('kd_yaw', 0.0001)
+        self.declare_parameter('kd_yaw', 0.0003)
 
         # State Variables for PID calculations
         self.integral_roll = 0.0
@@ -125,8 +125,8 @@ class PIDControlNode(Node):
             error_roll = 0.0
         p_roll = kp_roll * error_roll
         i_roll = ki_roll * self.integral_roll
-        is_roll_blocked = (self.current_roll_angle <= R_LIMIT_MIN) or \
-                          (self.current_roll_angle >= R_LIMIT_MAX)
+        is_roll_blocked = (self.current_roll_angle <= R_LIMIT_MIN and error_roll < 0) or \
+                          (self.current_roll_angle >= R_LIMIT_MAX and error_roll > 0)
         if not is_roll_blocked: # Anti-windup
             self.integral_roll += error_roll * dt
             i_roll = ki_roll * self.integral_roll
@@ -138,8 +138,8 @@ class PIDControlNode(Node):
             error_pitch = 0.0
         p_pitch = kp_pitch * error_pitch
         i_pitch = ki_pitch * self.integral_pitch
-        is_pitch_blocked = (self.current_pitch_angle <= P_LIMIT_MIN) or \
-                           (self.current_pitch_angle >= P_LIMIT_MAX)
+        is_pitch_blocked = (self.current_pitch_angle <= P_LIMIT_MIN and error_pitch < 0) or \
+                           (self.current_pitch_angle >= P_LIMIT_MAX and error_pitch > 0)
         if not is_pitch_blocked:
             self.integral_pitch += error_pitch * dt
             i_pitch = ki_pitch * self.integral_pitch
@@ -151,8 +151,8 @@ class PIDControlNode(Node):
             error_yaw = 0.0
         p_yaw = kp_yaw * error_yaw
         i_yaw = ki_yaw * self.integral_yaw
-        is_yaw_blocked = (self.current_yaw_angle <= Y_LIMIT_MIN) or \
-                         (self.current_yaw_angle >= Y_LIMIT_MAX)
+        is_yaw_blocked = (self.current_yaw_angle <= Y_LIMIT_MIN and error_yaw < 0) or \
+                         (self.current_yaw_angle >= Y_LIMIT_MAX and error_yaw > 0)
         if not is_yaw_blocked:
             self.integral_yaw += error_yaw * dt
             i_yaw = ki_yaw * self.integral_yaw
@@ -160,7 +160,7 @@ class PIDControlNode(Node):
         control_yaw = p_yaw + i_yaw + d_yaw
 
         # Debugging output for anti-windup status (can be commented out during actual operation)
-        self.get_logger().debug(f'Anti-Windup -> Roll: {"Blocked" if is_roll_blocked else "OK"}, Pitch: {"Blocked" if is_pitch_blocked else "OK"}, Yaw: {"Blocked" if is_yaw_blocked else "OK"}')
+        # self.get_logger().info(f'Anti-Windup -> Roll: {"Blocked" if is_roll_blocked else "OK"}, Pitch: {"Blocked" if is_pitch_blocked else "OK"}, Yaw: {"Blocked" if is_yaw_blocked else "OK"}')
 
         # To avoid overshooting and to keep the control signal within reasonable limits, we can clamp the output to a maximum speed.
         MAX_SPEED = 2.0
