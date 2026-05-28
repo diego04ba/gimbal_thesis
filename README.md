@@ -30,15 +30,15 @@ xhost +local:root
 ### 2. Axis PTZ Camera Configuration
 This system is designed to be compatible with the Axis M55 series (e.g., M5525-E).
 
-**Network Setup**: Use the AXIS IP Utility software to find the camera's IP address and ensure the IPv4 address matches the one specified in `ptz_complete.launch.py`. 
+**Network Setup**: Use the AXIS IP Utility software to find the camera's IP address and ensure the IPv4 address matches the one specified in `ptz_complete.launch.py`. By default, the camera might receive a dynamic IP from your local DHCP server. To ensure the ROS nodes can always reach the camera without manually updating the launch files after every reboot, please log into the camera's web interface via browser. From there, set the network configuration to "Static / Manual", specifying and locking in the exact IP address you want to use for your system.
 The system uses encrypted Digest authentication by default. If you have set up a custom username and password on the camera, remember to update these parameters in the launch file.
 
 **Troubleshooting Network Connectivity (Ubuntu)**: If your PC fails to reach the camera (e.g., if connected directly via Ethernet without a DHCP router), your network interface might require a static IP configuration. You can force the connection using `nmcli` in the terminal:
 ```bash
 # Create a static profile for the Ethernet port (adjust 'eth0' if your interface name differs)
-sudo nmcli con add con-name "Telecamera_Axis" ifname eth0 type ethernet ipv4.addresses 192.168.0.100/24 ipv4.method manual
+sudo nmcli con add con-name "Axis_Camera" ifname eth0 type ethernet ipv4.addresses 192.168.0.100/24 ipv4.method manual
 # Activate the connection
-sudo nmcli con up "Telecamera_Axis"
+sudo nmcli con up "Axis_Camera"
 # Verify the connection (the default Axis fallback IP is usually 192.168.0.90)
 ping 192.168.0.90 # if it worked you should see something such as "64 bytes from 192.168.0.90: icmp_seq=1..."
 ```

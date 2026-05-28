@@ -13,6 +13,9 @@ import cv2
 import cv2.aruco as aruco
 from cv_bridge import CvBridge
 
+# Importing queue for managing the marker blacklist
+from collections import deque
+
 class ArucoNode(Node):
     def __init__(self):
         super().__init__('aruco_node')
@@ -21,18 +24,20 @@ class ArucoNode(Node):
         self.aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_50)
         self.parameters = aruco.DetectorParameters()
 
-        # Specific ID to follow (for example, ID 1)
-        self.target_id = 1 # change this to the ID you want to track
+        self.target_id = -1 # Avoiding auto-detection of the marker 
+        self.declare_parameter('queue_size', 1)
+        self.queue_size = self.get_parameter('queue_size').get_parameter_value().integer_value
+        self.marker_queue = deque(maxlen=self.queue_size)
+
+        self.declare_parameter('follow_time', 10.0)
+        self.follow_time = self.get_parameter('follow_time').get_parameter_value().double_value
+        self.follow_marker_time = self.get_clock().now()
 
         # Creating Bridge 
         self.br = CvBridge()
 
         # Subscribing to the /image_raw/compressed topic to get frames from the Device camera
-        self.subscription = self.create_subscription(
-            CompressedImage,
-            '/image_raw/compressed',
-            self.image_callback,
-            10)
+        self.subscription = self.create_subscription(CompressedImage,'/image_raw/compressed',self.image_callback,10)
         self.subscription  # prevent unused variable warning
         
         # Publisher to publish the position error
@@ -46,7 +51,7 @@ class ArucoNode(Node):
         self.min_time_between_frames = 1.0 / self.target_fps
         self.last_processed_time = self.get_clock().now()
 
-        self.declare_parameter('resize_factor', 1.0) # To reduce the resolution for faster processing, modify in launch file if needed
+        self.declare_parameter('resize_factor', 1.0) # To reduce the resolution for faster processing
         self.resize_factor = self.get_parameter('resize_factor').get_parameter_value().double_value
 
         self.get_logger().info(f'Aruco Node initialized. Tracking target ID: {self.target_id}')
@@ -73,7 +78,7 @@ class ArucoNode(Node):
             # Dinamically get the dimensions of the frame to calculate the center (Setpoint)
             height, width = small_image.shape[:2]
             
-            # Exact center of the frame (Setpoint for the gimbal)
+            # Exact center of the frame (Setpoint)
             frame_center_x = width / 2.0
             frame_center_y = height / 2.0
 
@@ -84,6 +89,16 @@ class ArucoNode(Node):
                 # Flatten the ID array for easier searching
                 ids_flat = ids.flatten()
 
+                if self.target_id == -1:
+                    for marker_id in ids_flat:
+                        if marker_id not in self.marker_queue:
+                            self.target_id = marker_id
+                            self.follow_marker_time = self.get_clock().now() # Reset the follow marker timer
+                            self.get_logger().info(f'Auto-detected target ID: {self.target_id}')
+                            break
+                    if self.target_id == -1:
+                        return # No new marker found, exit the block
+                
                 # Check if the target ID is among the detected markers
                 if self.target_id in ids_flat:
                     self.last_marker_time = self.get_clock().now() # Update last seen time
@@ -116,6 +131,16 @@ class ArucoNode(Node):
                     # self.get_logger().info(f'TARGET ID {self.target_id} - Error X: {real_error_x:.2f}, Y: {real_error_y:.2f}', throttle_duration_sec=0.1)
                 else:
                     self.get_logger().info(f'Marker ID {self.target_id} not found.', once=False, throttle_duration_sec=10.0)
+
+            if self.target_id != -1 and self.queue_size > 0:
+                current_follow_time = self.get_clock().now()
+                if (current_follow_time - self.follow_marker_time) > rclpy.duration.Duration(seconds=self.follow_time):
+                    self.marker_queue.append(self.target_id) # Add the marker to the queue to avoid immediate re-detection
+                    if self.queue_size == 1:
+                        self.get_logger().info(f'Tracking timeout ({self.follow_time}s) reached. Marker ID {self.target_id} blacklisted until another target is tracked.')
+                    else:
+                        self.get_logger().info(f'Tracking timeout ({self.follow_time}s) reached. Marker ID {self.target_id} blacklisted for the next {self.queue_size} new targets.')
+                    self.target_id = -1
 
         except Exception as e:
             self.get_logger().error(f'Error in callback: {str(e)}')

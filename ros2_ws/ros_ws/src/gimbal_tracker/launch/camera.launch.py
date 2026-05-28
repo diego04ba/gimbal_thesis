@@ -20,7 +20,7 @@ def generate_launch_description():
             executable='aruco_detector', 
             name='aruco_processor',
             output='screen',
-            parameters=[{'resize_factor': 1.0}]
+            parameters=[{'resize_factor': 1.0, 'queue_size': 1, 'follow_time': 10.0}]
         ),
 
         # RQT Image View to visualize the camera feed

@@ -27,7 +27,7 @@ def generate_launch_description():
         executable='aruco_detector', 
         name='aruco_detector',
         output='screen',
-        parameters=[{'resize_factor': 1.0}]
+        parameters=[{'resize_factor': 1.0, 'queue_size': 1, 'follow_time': 10.0}]
     )
     # PID Controller for PTZ movement
 

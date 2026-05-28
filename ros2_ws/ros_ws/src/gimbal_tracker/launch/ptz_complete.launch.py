@@ -14,7 +14,7 @@ def generate_launch_description():
         ),
         # To change settings, modify the driver_node.launch.py in the axis_camera package.
         launch_arguments={
-            'hostname': '10.73.0.152', # 10.73.0.152
+            'hostname': '10.73.0.152', # 10.73.0.152 for router (could change), 192.168.0.90 default without router
             'username': 'root',
             'password': 'pass',
             'use_encrypted_password': 'true' 
@@ -27,10 +27,10 @@ def generate_launch_description():
         executable='aruco_detector', 
         name='aruco_detector',
         output='screen',
-        parameters=[{'resize_factor': 1.0}]
+        parameters=[{'resize_factor': 1.0, 'queue_size': 1, 'follow_time': 10.0}] # queue_size 0 means the aruco detector locks onto the first marker detected.
     )
-    # PID Controller for PTZ movement
 
+    # PID Controller for PTZ movement
     pid_node = Node(
             package='gimbal_tracker',
             executable='pid_controller',
@@ -38,7 +38,7 @@ def generate_launch_description():
             output='screen'
         )
 
-        # PTZ driver for Axis Camera: modify IP, username, and password as needed
+    # PTZ driver for Axis Camera: modify IP, username, and password as needed
     axis_node = Node(
             package='gimbal_tracker',
             executable='axis_driver',
@@ -47,7 +47,7 @@ def generate_launch_description():
             parameters=[{'ip': '10.73.0.152', 'user': 'root', 'password': 'pass'}] # 10.73.0.152, 192.168.0.90 
         )
 
-        # RQT Image View to visualize the camera feed
+    # RQT Image View to visualize the camera feed
     rqt_image_view = Node(
             package='rqt_image_view',
             executable='rqt_image_view',
