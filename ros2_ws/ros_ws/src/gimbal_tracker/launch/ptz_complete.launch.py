@@ -5,6 +5,11 @@ from launch.launch_description_sources import AnyLaunchDescriptionSource
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 
+hostname = '10.73.0.152' # 10.73.0.152 for router (could change), 192.168.0.90 default without router
+username = 'root'
+password = 'pass'
+encrypted_password = 'true' # 'true' for digest auth, 'false' for basic auth (not recommended)
+
 def generate_launch_description():
     # Axis Camera Driver
     axis_dir = get_package_share_directory('axis_camera')
@@ -13,12 +18,7 @@ def generate_launch_description():
             os.path.join(axis_dir, 'launch', 'axis_camera.launch')
         ),
         # To change settings, modify the driver_node.launch.py in the axis_camera package.
-        launch_arguments={
-            'hostname': '10.73.0.152', # 10.73.0.152 for router (could change), 192.168.0.90 default without router
-            'username': 'root',
-            'password': 'pass',
-            'use_encrypted_password': 'true' 
-        }.items()
+        launch_arguments={'hostname': hostname,'username': username,'password': password,'use_encrypted_password': encrypted_password}.items()
     )
 
     # ArUco Detector
@@ -44,7 +44,7 @@ def generate_launch_description():
             executable='axis_driver',
             name='axis_driver',
             output='screen',
-            parameters=[{'ip': '10.73.0.152', 'user': 'root', 'password': 'pass'}] # 10.73.0.152, 192.168.0.90 
+            parameters=[{'ip': hostname, 'user': username, 'password': password, 'use_encrypted_password': encrypted_password}]
         )
 
     # RQT Image View to visualize the camera feed

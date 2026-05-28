@@ -30,7 +30,16 @@ xhost +local:root
 ### 2. Axis PTZ Camera Configuration
 This system is designed to be compatible with the Axis M55 series (e.g., M5525-E).
 
-**Network Setup**: Use the AXIS IP Utility software to find the camera's IP address and ensure the IPv4 address matches the one specified in `ptz_complete.launch.py`. By default, the camera might receive a dynamic IP from your local DHCP server. To ensure the ROS nodes can always reach the camera without manually updating the launch files after every reboot, please log into the camera's web interface via browser. From there, set the network configuration to "Static / Manual", specifying and locking in the exact IP address you want to use for your system.
+**Network Setup**: Use the AXIS IP Utility software on Windows to find the camera's IP address and ensure the IPv4 address matches the one specified in `ptz_complete.launch.py`. By default, the camera might receive a dynamic IP from your local DHCP server. To ensure the ROS nodes can always reach the camera without manually updating the launch files after every reboot, please log into the camera's web interface via browser. From there, set the network configuration to "Static / Manual", specifying and locking in the exact IP address you want to use for your system.
+If you're on Ubuntu, you can find the camera's IP address using `arp-scan`:
+```bash
+# Install arp-scan
+sudo apt update
+sudo apt install arp-scan
+# Run this command on the correct interface if not 'eth0'
+sudo arp-scan --interface=eth0 --localnet
+# Search the Camera Name in the third column, in the first column of the same row you'll find the IP address
+```
 The system uses encrypted Digest authentication by default. If you have set up a custom username and password on the camera, remember to update these parameters in the launch file.
 
 **Troubleshooting Network Connectivity (Ubuntu)**: If your PC fails to reach the camera (e.g., if connected directly via Ethernet without a DHCP router), your network interface might require a static IP configuration. You can force the connection using `nmcli` in the terminal:
@@ -44,7 +53,12 @@ ping 192.168.0.90 # if it worked you should see something such as "64 bytes from
 ```
 
 
-### 3. Docker Build and Deployment
+### 3. ArUco Dynamic Detection Configuration
+The tracking system relies on a dynamic and highly configurable logic designed to balance stability and environmental exploration. Initially, the camera locks onto an exclusive target and follows it for a predefined number of seconds dictated by the `follow_time` parameter. Once this time elapses, the system prevents the camera from getting stuck on the same marker by placing its ID into a rolling blacklist queue controlled by the `queue_size` parameter. This forces the camera to temporarily ignore it and search for new targets in the area. As the queue reaches its maximum capacity, the oldest IDs are pushed out, making them available for tracking once again. Alternatively, if you need to monitor a single object indefinitely, setting the `queue_size` to zero completely bypasses this blacklist mechanism, allowing the camera to achieve an absolute lock-on that tracks the first detected marker without any time limits.
+The `queue_size` parameter requires a positive integer value, whereas the `follow_time` parameter requires a positive floating point. These parameters can be modified within the `ptz_complete.launch.py` file in the ArUco Detector section. 
+
+
+### 4. Docker Build and Deployment
 The project uses a containerized environment to manage ROS2 Humble dependencies and OpenCV libraries using Docker. Use the provided automation scripts to build the image and launch the system:
 
 ```bash
@@ -66,7 +80,7 @@ source install/setup.bash
 ros2 launch gimbal_tracker ptz_complete.launch.py
 ```
 
-**Performance Tuning**: To mitigate system latency and reduce CPU load during execution, you can adjust the resize factor within the `complete.launch.py` file in the ArUco Detector section.  
+**Performance Tuning**: To mitigate system latency and reduce CPU load during execution, you can adjust the resize factor within the `ptz_complete.launch.py` file in the ArUco Detector section.  
 **Note**: This parameter requires a floating-point value between 0.0 and 1.0 (e.g. {'resize_factor': 0.5}).
 
 
@@ -96,10 +110,10 @@ xhost +local:root
 
 ### 2. Spinnaker SDK Installation
 To ensure full hardware compatibility and optimal performance with the FLIR Firefly S camera, the Spinnaker SDK should be installed on the host system. This is necessary to correctly configure udev rules for USB device permissions and to manage the kernel's USBFS memory limits, which are critical for high-resolution industrial image streaming.
-**Note**: To ensure the camera is detected, modify the `complete.launch.py` file by entering your camera's specific serial number as a string (e.g., '123456789').
+**Note**: To ensure the camera is detected, modify the `gimbal_complete.launch.py` file by entering your camera's specific serial number as a string (e.g., '123456789').
 
 ### 3. Gimbal Interfacing
-The gimbal is typically assigned to `/dev/ttyUSB0` with a default baudrate of `115200`. If the device is assigned to a different port or the internal baudrate has been modified via the SimpleBGC GUI, update the corresponding parameters in `complete.launch.py`.
+The gimbal is typically assigned to `/dev/ttyUSB0` with a default baudrate of `115200`. If the device is assigned to a different port or the internal baudrate has been modified via the SimpleBGC GUI, update the corresponding parameters in `gimbal_complete.launch.py`.
 
 ```bash
 # To identify the port assigned to the gimbal run in the terminal
@@ -144,5 +158,5 @@ source install/setup.bash
 ros2 launch gimbal_tracker gimbal_complete.launch.py
 ```
 
-To mitigate system latency and reduce CPU load during execution, you can adjust the resize factor within the `complete.launch.py` file in the ArUco Detector section.  
+To mitigate system latency and reduce CPU load during execution, you can adjust the resize factor within the `gimbal_complete.launch.py` file in the ArUco Detector section.  
 **Note**: This parameter requires a floating-point value between 0.0 and 1.0 (e.g. {'resize_factor': 0.5}).

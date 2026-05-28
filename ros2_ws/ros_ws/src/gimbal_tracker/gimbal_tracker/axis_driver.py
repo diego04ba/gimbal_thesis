@@ -19,13 +19,20 @@ class AxisDriver(Node):
         self.password = self.get_parameter('password').value
 
         self.session = requests.Session()
-        self.session.auth = HTTPDigestAuth(self.user, self.password)
-        # self.session.auth = HTTPBasicAuth(self.user, self.password)
+        self.declare_parameter('use_encrypted_password', 'true')
+        self.use_encrypted_password = self.get_parameter('use_encrypted_password').value
+        if self.use_encrypted_password == 'true':
+            self.session.auth = HTTPDigestAuth(self.user, self.password)
+        elif self.use_encrypted_password == 'false':
+            self.session.auth = HTTPBasicAuth(self.user, self.password)
+        else: # Default to digest auth if the parameter is set incorrectly
+            self.get_logger().warn("Invalid value for 'use_encrypted_password'. Defaulting to 'true' (digest authentication).")
+            self.session.auth = HTTPDigestAuth(self.user, self.password)
 
-        self.subscription = self.create_subscription(Twist,'/control',self.ptz_control_callback,10)
+        self.subscription = self.create_subscription(Twist,'/control',self.ptz_control_callback, 10)
         
-        self.publisher = self.create_publisher(Twist, '/feedback',10)
-        self.timer = self.create_timer(0.1, self.ptz_feedback)
+        self.publisher = self.create_publisher(Twist, '/feedback', 10)
+        self.timer = self.create_timer(0.1, self.ptz_feedback_callback)
         self.is_requesting_feedback = False
 
     def ptz_control_callback(self, msg):
@@ -41,7 +48,7 @@ class AxisDriver(Node):
         except requests.exceptions.RequestException:
             pass
     
-    def ptz_feedback(self):
+    def ptz_feedback_callback(self):
         if self.is_requesting_feedback:
             return
         

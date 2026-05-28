@@ -43,7 +43,11 @@ def generate_launch_description():
             executable='axis_driver',
             name='axis_driver',
             output='screen',
-            parameters=[{'ip': '192.168.1.100', 'user': 'diego', 'password': 'c3labd2026'}]
+            parameters=[{
+                'ip': '10.73.0.152', 
+                'user': 'root', 
+                'password': 'pass', 
+                'use_encrypted_password': 'true'}] # 10.73.0.152 for router (could change), 192.168.0.90 default without router
         ),
 
         # RQT Image View to visualize the camera feed
