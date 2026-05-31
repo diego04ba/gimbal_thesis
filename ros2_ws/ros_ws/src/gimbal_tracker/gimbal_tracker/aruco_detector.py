@@ -43,18 +43,16 @@ class ArucoNode(Node):
         # Publisher to publish the position error
         self.publisher_ = self.create_publisher(Point, '/position', 10)
 
-        self.last_marker_time = self.get_clock().now()
-        self.marker_timeout = 10.0
-        self.watchdog_timer = self.create_timer(5, self.watchdog_callback)
-
+        # Targeting 20 FPS for processing to reduce CPU load
         self.target_fps = 20.0
         self.min_time_between_frames = 1.0 / self.target_fps
         self.last_processed_time = self.get_clock().now()
 
+        # Parameter to resize the input frames for faster processing (1.0 means no resizing)
         self.declare_parameter('resize_factor', 1.0) # To reduce the resolution for faster processing
         self.resize_factor = self.get_parameter('resize_factor').get_parameter_value().double_value
 
-        self.get_logger().info(f'Aruco Node initialized. Tracking target ID: {self.target_id}')
+        self.get_logger().info(f'Aruco Node initialized.')
 
     # Creating the function to process the frames everytime the node gets one
     def image_callback(self, msg):
@@ -97,6 +95,18 @@ class ArucoNode(Node):
                             self.get_logger().info(f'Auto-detected target ID: {self.target_id}')
                             break
                     if self.target_id == -1:
+                        cycle_array = []
+                        for ids in ids_flat:
+                            position = self.marker_queue.index(ids) + 1
+                            cycle_array.append(position)
+                        ids_str = ", ".join(map(str, ids_flat))
+                        cycles_str = ", ".join(map(str, cycle_array))
+                        if len(cycle_array) == 1 and position == 1:
+                            self.get_logger().info(f'Marker ID {ids_str} blacklisted, cannot be tracked for another cycle.', throttle_duration_sec=5.0)
+                        elif len(cycle_array) == 1:
+                            self.get_logger().info(f'Marker ID {ids_str} blacklisted, cannot be tracked for another {cycles_str} cycles.', throttle_duration_sec=5.0)
+                        else:
+                            self.get_logger().info(f'Marker IDs {ids_str} blacklisted, cannot be tracked respectively for another {cycles_str} cycles.', throttle_duration_sec=5.0)
                         return # No new marker found, exit the block
                 
                 # Check if the target ID is among the detected markers
@@ -129,8 +139,6 @@ class ArucoNode(Node):
 
                     # Logging the error for debugging purposes
                     # self.get_logger().info(f'TARGET ID {self.target_id} - Error X: {real_error_x:.2f}, Y: {real_error_y:.2f}', throttle_duration_sec=0.1)
-                else:
-                    self.get_logger().info(f'Marker ID {self.target_id} not found.', once=False, throttle_duration_sec=10.0)
 
             if self.target_id != -1 and self.queue_size > 0:
                 current_follow_time = self.get_clock().now()
@@ -139,18 +147,11 @@ class ArucoNode(Node):
                     if self.queue_size == 1:
                         self.get_logger().info(f'Tracking timeout ({self.follow_time}s) reached. Marker ID {self.target_id} blacklisted until another target is tracked.')
                     else:
-                        self.get_logger().info(f'Tracking timeout ({self.follow_time}s) reached. Marker ID {self.target_id} blacklisted for the next {self.queue_size} new targets.')
+                        self.get_logger().info(f'Tracking timeout ({self.follow_time}s) reached. Marker ID {self.target_id} blacklisted for the next {self.queue_size} targets.')
                     self.target_id = -1
 
         except Exception as e:
             self.get_logger().error(f'Error in callback: {str(e)}')
-    
-    def watchdog_callback(self):
-        current_time = self.get_clock().now()
-        time_since_last_marker = (current_time - self.last_marker_time).nanoseconds / 1e9
-
-        if time_since_last_marker > self.marker_timeout:
-            self.get_logger().warn(f'No marker detected for {time_since_last_marker:.2f} seconds. Check camera feed or marker visibility.', throttle_duration_sec=10.0)
 
 def main(args=None):
     rclpy.init(args=args)

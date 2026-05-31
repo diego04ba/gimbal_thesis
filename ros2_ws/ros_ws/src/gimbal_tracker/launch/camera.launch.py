@@ -11,7 +11,7 @@ def generate_launch_description():
             executable='camera_node', 
             name='camera_source',
             output='screen',
-            parameters=[{'use_sim_time': False}]
+            parameters=[{'use_sim_time': False, 'source': "http://192.168.1.202:8080/video"}]
         ),
 
         # ArUco Detector
@@ -20,7 +20,7 @@ def generate_launch_description():
             executable='aruco_detector', 
             name='aruco_processor',
             output='screen',
-            parameters=[{'resize_factor': 1.0, 'queue_size': 1, 'follow_time': 10.0}]
+            parameters=[{'resize_factor': 1.0, 'queue_size': 2, 'follow_time': 10.0}]
         ),
 
         # RQT Image View to visualize the camera feed
