@@ -10,6 +10,8 @@ username = 'root'
 password = 'pass'
 encrypted_password = 'true' # 'true' for digest auth, 'false' for basic auth (not recommended)
 
+# ros2 launch gimbal_tracker ptz_complete.launch.py 2>&1 | grep -v "sequence size exceeds remaining buffer"
+
 def generate_launch_description():
     # Axis Camera Driver
     axis_dir = get_package_share_directory('axis_camera')

@@ -14,7 +14,7 @@ def generate_launch_description():
         ),
         # To change settings, modify the driver_node.launch.py in the axis_camera package.
         launch_arguments={
-            'hostname': '192.168.0.90',
+            'hostname': '10.73.0.152',
             'username': 'root',
             'password': 'pass',
             'use_encrypted_password': 'true'
@@ -27,7 +27,7 @@ def generate_launch_description():
         executable='aruco_detector', 
         name='aruco_detector',
         output='screen',
-        parameters=[{'resize_factor': 1.0, 'queue_size': 1, 'follow_time': 10.0}]
+        parameters=[{'resize_factor': 1.0, 'queue_size': 0, 'follow_time': 10.0}]
     )
     # PID Controller for PTZ movement
 

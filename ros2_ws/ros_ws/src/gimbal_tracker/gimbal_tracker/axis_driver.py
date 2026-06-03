@@ -36,8 +36,8 @@ class AxisDriver(Node):
         self.is_requesting_feedback = False
 
     def ptz_control_callback(self, msg):
-        pan_speed = int((msg.angular.z / 2.0) * 100)
-        tilt_speed = -int((msg.angular.y / 2.0) * 100)
+        pan_speed = int(msg.angular.z)
+        tilt_speed = -int(msg.angular.y)
         pan_speed = max(-100, min(100, pan_speed))
         tilt_speed = max(-100, min(100, tilt_speed))
 

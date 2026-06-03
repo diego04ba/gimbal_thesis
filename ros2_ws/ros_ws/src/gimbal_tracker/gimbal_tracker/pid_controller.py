@@ -21,18 +21,18 @@ class PIDControlNode(Node):
 
         # Roll (X-axis) PID gains
         self.declare_parameter('kp_roll', 0.005) # Proportional gain that gives a good velocity response without too much overshoot
-        self.declare_parameter('ki_roll', 0.005) # Integral gain that helps eliminate steady-state error, small to avoid instability
+        self.declare_parameter('ki_roll', 0.001) # Integral gain that helps eliminate steady-state error, small to avoid instability
         self.declare_parameter('kd_roll', 0.0003) # Derivative gain that helps dampen the response and reduce overshoot, small to avoid noise amplification
 
         # Pitch/Tilt (Y-axis) PID gains
-        self.declare_parameter('kp_pitch', 0.005) 
+        self.declare_parameter('kp_pitch', 0.25) 
         self.declare_parameter('ki_pitch', 0.01) 
-        self.declare_parameter('kd_pitch', 0.0003) 
+        self.declare_parameter('kd_pitch', 0.02) 
 
         # Yaw/Pan (Z-axis) PID gains
-        self.declare_parameter('kp_yaw', 0.005)
-        self.declare_parameter('ki_yaw', 0.005)
-        self.declare_parameter('kd_yaw', 0.0003)
+        self.declare_parameter('kp_yaw', 0.25)
+        self.declare_parameter('ki_yaw', 0.01)
+        self.declare_parameter('kd_yaw', 0.02)
 
         # State Variables for PID calculations
         self.integral_roll = 0.0
@@ -61,7 +61,7 @@ class PIDControlNode(Node):
         self.control_pub = self.create_publisher(Twist,'/control',10)
 
         self.last_target_time = self.get_clock().now() # To track when we last received a target position.
-        self.target_timeout = 0.2 
+        self.target_timeout = 0.2
         self.watchdog_timer = self.create_timer(0.1, self.watchdog_callback) # Timer to check for target timeout
 
         self.get_logger().info('PID Control Node initialized.')
@@ -75,10 +75,9 @@ class PIDControlNode(Node):
 
     def error_callback(self, msg):
         self.last_target_time = self.get_clock().now() # Update the last time we received a target position.
-        if self.feedback_received == False:
-            self.get_logger().warning('Waiting for PTZ feedback on /feedback topic to start controlling...',
-                throttle_duration_sec=2.0)
-            return # Wait until we have received feedback from the Device to start controlling
+        #if self.feedback_received == False:
+            #self.get_logger().warning('Waiting for PTZ feedback on /feedback topic to start controlling...', throttle_duration_sec=2.0)
+            #return # Wait until we have received feedback from the Device to start controlling
 
         # Calculate time difference (dt)
         current_time = self.get_clock().now()
@@ -163,7 +162,7 @@ class PIDControlNode(Node):
         # self.get_logger().info(f'Anti-Windup -> Roll: {"Blocked" if is_roll_blocked else "OK"}, Pitch: {"Blocked" if is_pitch_blocked else "OK"}, Yaw: {"Blocked" if is_yaw_blocked else "OK"}')
 
         # To avoid overshooting and to keep the control signal within reasonable limits, we can clamp the output to a maximum speed.
-        MAX_SPEED = 2.0
+        MAX_SPEED =  100.0
         control_roll = max(min(control_roll, MAX_SPEED), -MAX_SPEED)
         control_pitch = max(min(control_pitch, MAX_SPEED), -MAX_SPEED)
         control_yaw = max(min(control_yaw, MAX_SPEED), -MAX_SPEED)
@@ -182,7 +181,7 @@ class PIDControlNode(Node):
         self.last_time = current_time
 
         # Debugging output (can be commented out during actual operation)
-        # self.get_logger().debug(f'PID OUT -> Roll: {control_roll:.2f}, Pitch: {control_pitch:.2f}, Yaw: {control_yaw:.2f}, (dt: {dt:.3f}s)')
+        # self.get_logger().info(f'PID OUT -> Roll: {control_roll:.2f}, Pitch: {control_pitch:.2f}, Yaw: {control_yaw:.2f}, (dt: {dt:.3f}s)')
     
     def watchdog_callback(self):
         # Check if we have not received a target position for a certain amount of time, and if so, reset the control outputs.
