@@ -25,6 +25,8 @@ class ArucoNode(Node):
         self.parameters = aruco.DetectorParameters()
 
         self.target_id = -1 # Avoiding auto-detection of the marker 
+        self.declare_parameter('id_limit', 4)
+        self.id_limit = self.get_parameter('id_limit').get_parameter_value().integer_value
         self.declare_parameter('queue_size', 1)
         self.queue_size = self.get_parameter('queue_size').get_parameter_value().integer_value
         self.marker_queue = deque(maxlen=self.queue_size)
@@ -89,17 +91,22 @@ class ArucoNode(Node):
 
                 if self.target_id == -1:
                     for marker_id in ids_flat:
-                        if marker_id not in self.marker_queue:
+                        if marker_id <= self.id_limit and marker_id not in self.marker_queue: # Avoid detecting markers that are not used for testing
                             self.target_id = marker_id
                             self.follow_marker_time = self.get_clock().now() # Reset the follow marker timer
                             self.get_logger().info(f'Auto-detected target ID: {self.target_id}')
                             break
                     if self.target_id == -1:
                         cycle_array = []
-                        for ids in ids_flat:
-                            position = self.marker_queue.index(ids) + 1
-                            cycle_array.append(position)
-                        ids_str = ", ".join(map(str, ids_flat))
+                        valid_blacklisted_ids = []
+                        for marker_id in ids_flat:
+                            if marker_id <= self.id_limit and marker_id in self.marker_queue: # Only consider markers that are used for testing
+                                position = self.marker_queue.index(marker_id) + 1
+                                cycle_array.append(position)
+                                valid_blacklisted_ids.append(marker_id)
+                        if not valid_blacklisted_ids:
+                            return # No valid blacklisted markers found, exit the block
+                        ids_str = ", ".join(map(str, valid_blacklisted_ids))
                         cycles_str = ", ".join(map(str, cycle_array))
                         if len(cycle_array) == 1 and position == 1:
                             self.get_logger().info(f'Marker ID {ids_str} blacklisted, cannot be tracked for another cycle.', throttle_duration_sec=5.0)
