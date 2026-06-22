@@ -7,6 +7,7 @@ from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Point
+from std_msgs.msg import Int32
 
 # Importing OpenCV and ArUco libraries for marker detection
 import cv2
@@ -44,7 +45,8 @@ class ArucoNode(Node):
         
         # Publisher to publish the position error
         self.publisher_ = self.create_publisher(Point, '/position', 10)
-
+        # Publisher to publish the detected marker ID
+        self.target_id_pub = self.create_publisher(Int32, '/debug/target_id', 10)
         # Targeting 20 FPS for processing to reduce CPU load
         self.target_fps = 20.0
         self.min_time_between_frames = 1.0 / self.target_fps
@@ -144,8 +146,16 @@ class ArucoNode(Node):
                     
                     self.publisher_.publish(error_msg)
 
+                    msg_id = Int32()
+                    msg_id.data = int(self.target_id)
+                    self.target_id_pub.publish(msg_id)
+
                     # Logging the error for debugging purposes
                     # self.get_logger().info(f'TARGET ID {self.target_id} - Error X: {real_error_x:.2f}, Y: {real_error_y:.2f}', throttle_duration_sec=0.1)
+            else:
+                msg_id = Int32()
+                msg_id.data = -1
+                self.target_id_pub.publish(msg_id)
 
             if self.target_id != -1 and self.queue_size > 0:
                 current_follow_time = self.get_clock().now()
@@ -156,6 +166,9 @@ class ArucoNode(Node):
                     else:
                         self.get_logger().info(f'Tracking timeout ({self.follow_time}s) reached. Marker ID {self.target_id} blacklisted for the next {self.queue_size} targets.')
                     self.target_id = -1
+                    msg_id = Int32()
+                    msg_id.data = -1
+                    self.target_id_pub.publish(msg_id)
 
         except Exception as e:
             self.get_logger().error(f'Error in callback: {str(e)}')

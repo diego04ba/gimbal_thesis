@@ -19,6 +19,7 @@ RUN apt update -y && apt install -y \
 
 RUN pip3 install --default-timeout=1000 --no-cache-dir opencv-contrib-python-headless==4.8.0.74 --no-deps
 RUN pip3 install --default-timeout=1000 --no-cache-dir requests
+RUN pip3 install pandas matplotlib
 
 # Installing Spinnaker SDK dependencies
 RUN if [ ! -d /etc/ros/rosdep/sources.list.d/ ]; then rosdep init; fi && \

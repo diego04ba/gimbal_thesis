@@ -10,6 +10,12 @@ username = 'root'
 password = 'pass'
 encrypted_password = 'true' # 'true' for digest auth, 'false' for basic auth (not recommended)
 
+testing = False # Set to True for testing
+test_name = 'step_response'
+# test_name = 'anti_windup_off' 
+# test_name = 'anti_windup_on' 
+# test_name = 'multi_tracking' 
+
 # ros2 launch gimbal_tracker ptz_complete.launch.py 2>&1 | grep -v "sequence size exceeds remaining buffer"
 
 def generate_launch_description():
@@ -29,7 +35,7 @@ def generate_launch_description():
         executable='aruco_detector', 
         name='aruco_detector',
         output='screen',
-        parameters=[{'resize_factor': 1.0, 'queue_size': 1, 'follow_time': 10.0}] # queue_size 0 means the aruco detector locks onto the first marker detected.
+        parameters=[{'resize_factor': 1.0, 'queue_size': 0, 'follow_time': 5.0}] # queue_size 0 means the aruco detector locks onto the first marker detected.
     )
 
     # PID Controller for PTZ movement
@@ -37,7 +43,8 @@ def generate_launch_description():
             package='gimbal_tracker',
             executable='pid_controller',
             name='pid_controller',
-            output='screen'
+            output='screen',
+            parameters=[{'kp': 0.25, 'ki': 0.01, 'kd': 0.02, 'anti_windup_enabled': True}]
         )
 
     # PTZ driver for Axis Camera: modify IP, username, and password as needed
@@ -56,11 +63,18 @@ def generate_launch_description():
             name='rqt_image_view',
             output='screen',
         )
+    
+    nodes_to_launch = [axis_launch, aruco_node, pid_node, axis_node, rqt_image_view]
+    
+    if testing:
+        # Data Logger Node to log testing data 
+        data_logger_node = Node(
+            package='gimbal_tracker',
+            executable='data_logger_node',
+            name='data_logger_node',
+            output='screen',
+            parameters=[{'test_name': test_name}]
+            )
+        nodes_to_launch.append(data_logger_node)
 
-    return LaunchDescription([
-        axis_launch,
-        aruco_node,
-        pid_node,
-        axis_node,
-        rqt_image_view
-    ])
+    return LaunchDescription(nodes_to_launch)

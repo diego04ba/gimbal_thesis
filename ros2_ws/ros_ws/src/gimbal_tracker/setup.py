@@ -36,6 +36,7 @@ setup(
             'pid_controller = gimbal_tracker.pid_controller:main',
             'gimbal_driver = gimbal_tracker.gimbal_driver:main',
             'axis_driver = gimbal_tracker.axis_driver:main',
+            'data_logger_node = gimbal_tracker.data_logger_node:main',
         ],
     },
 )
