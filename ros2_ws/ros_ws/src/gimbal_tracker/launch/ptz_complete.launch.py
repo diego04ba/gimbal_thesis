@@ -44,7 +44,7 @@ def generate_launch_description():
             executable='pid_controller',
             name='pid_controller',
             output='screen',
-            parameters=[{'kp': 0.25, 'ki': 0.01, 'kd': 0.02, 'anti_windup_enabled': True}]
+            parameters=[{'kp': 0.25, 'ki': 0.1, 'kd': 0.025, 'anti_windup_enabled': True}]
         )
 
     # PTZ driver for Axis Camera: modify IP, username, and password as needed
