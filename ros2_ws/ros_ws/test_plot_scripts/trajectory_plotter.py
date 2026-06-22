@@ -50,12 +50,41 @@ def plot_with_markers(filepath):
     
     # Linea gradiente
     x, y, t = data['angle_yaw'].values, data['angle_pitch'].values, data['time'].values
-    points = np.array([x, y]).T.reshape(-1, 1, 2)
-    segments = np.concatenate([points[:-1], points[1:]], axis=1)
+    segments = []
+    t_segments = []
+    for i in range(len(x) - 1):
+        x0, y0, t0 = x[i], y[i], t[i]
+        x1, y1, t1 = x[i+1], y[i+1], t[i+1]
+
+        if abs(x1 - x0) > 180:
+            if x1 < x0:
+                x1_unwrapped = x1 + 360
+                x_edge_pos = 180
+                x_edge_neg = -180
+            else:
+                x1_unwrapped = x1 - 360
+                x_edge_pos = -180
+                x_edge_neg = 180
+
+            f = (x_edge_pos - x0) / (x1_unwrapped - x0)
+            y_edge = y0 + f * (y1 - y0)
+            t_edge = t0 + f * (t1 - t0)
+
+            segments.append([(x0, y0), (x_edge_pos, y_edge)])
+            t_segments.append(t0)
+            
+            segments.append([(x_edge_neg, y_edge), (x1, y1)])
+            t_segments.append(t_edge)
+        else:
+            segments.append([(x0, y0), (x1, y1)])
+            t_segments.append(t0)
+
+    segments = np.array(segments)
+    t_segments = np.array(t_segments)
     
     norm = plt.Normalize(t.min(), t.max())
     lc = LineCollection(segments, cmap='viridis', norm=norm, linewidth=2)
-    lc.set_array(t)
+    lc.set_array(t_segments)
     ax.add_collection(lc)
     
     for m_id, (pos_x, pos_y) in marker_positions.items():
@@ -72,7 +101,7 @@ def plot_with_markers(filepath):
             ax.scatter(pos_x, pos_y, color='red', marker='*')
             ax.text(pos_x, pos_y + 3, f"ID {int(m_id)}", ha='center', fontsize=8)
 
-    ax.set_xlim(0, 360)
+    ax.set_xlim(-180, 180)
     ax.set_ylim(-90, 0)
     ax.set_xlabel("Pan [Degrees]")
     ax.set_ylabel("Tilt [Degrees]")
