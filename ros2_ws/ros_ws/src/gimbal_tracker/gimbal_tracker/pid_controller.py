@@ -28,15 +28,10 @@ class PIDControlNode(Node):
 
         self.declare_parameter('anti_windup_enabled', True)
 
-        # Roll (X-axis) PID gains
-        # self.declare_parameter('kp_roll', kp) # Proportional gain that gives a good velocity response without too much overshoot
-        # self.declare_parameter('ki_roll', ki) # Integral gain that helps eliminate steady-state error, small to avoid instability
-        # self.declare_parameter('kd_roll', kd) # Derivative gain that helps dampen the response and reduce overshoot, small to avoid noise amplification
-
         # Pitch/Tilt (Y-axis) PID gains
-        self.declare_parameter('kp_pitch', kp) 
-        self.declare_parameter('ki_pitch', ki) 
-        self.declare_parameter('kd_pitch', kd) 
+        self.declare_parameter('kp_pitch', kp) # Proportional gain that gives a good velocity response without too much overshoot
+        self.declare_parameter('ki_pitch', ki) # Integral gain that helps eliminate steady-state error, small to avoid instability
+        self.declare_parameter('kd_pitch', kd) # Derivative gain that helps dampen the response and reduce overshoot, small to avoid noise amplification
 
         # Yaw/Pan (Z-axis) PID gains
         self.declare_parameter('kp_yaw', kp)
@@ -44,19 +39,15 @@ class PIDControlNode(Node):
         self.declare_parameter('kd_yaw', kd)
 
         # State Variables for PID calculations
-        # self.integral_roll = 0.0
         self.integral_pitch = 0.0
         self.integral_yaw = 0.0
-        # self.prev_error_roll = 0.0
         self.prev_error_pitch = 0.0
         self.prev_error_yaw = 0.0
-        # self.prev_control_roll = 0.0
         self.prev_control_pitch = 0.0
         self.prev_control_yaw = 0.0
         self.last_time = self.get_clock().now()
 
         # Feedback variables
-        # self.current_roll_angle = 0.0
         self.current_pitch_angle = 0.0
         self.current_yaw_angle = 0.0
         self.feedback_received = False
@@ -83,7 +74,6 @@ class PIDControlNode(Node):
 
     def feedback_callback(self, msg):
         # Update current angles from device feedback
-        # self.current_roll_angle = msg.angular.x
         self.current_pitch_angle = msg.angular.y
         self.current_yaw_angle = msg.angular.z
         self.feedback_received = True
@@ -91,9 +81,6 @@ class PIDControlNode(Node):
     def error_callback(self, msg):
         self.last_target_time = self.get_clock().now() # Update the last time we received a target position.
         self.is_tracking = True
-        # if self.feedback_received == False:
-        #     self.get_logger().warning('Waiting for PTZ feedback on /feedback topic to start controlling...', throttle_duration_sec=2.0)
-        #     return # Wait until we have received feedback from the Device to start controlling
 
         # Calculate time difference (dt)
         current_time = self.get_clock().now()
@@ -107,10 +94,6 @@ class PIDControlNode(Node):
             dt = 0.1 
 
         # Fetch current tunable gains
-
-        # kp_roll = self.get_parameter('kp_roll').value
-        # ki_roll = self.get_parameter('ki_roll').value
-        # kd_roll = self.get_parameter('kd_roll').value
         
         kp_pitch = self.get_parameter('kp_pitch').value
         ki_pitch = self.get_parameter('ki_pitch').value
@@ -123,17 +106,12 @@ class PIDControlNode(Node):
         anti_windup_enabled = self.get_parameter('anti_windup_enabled').value
 
         # The error is directly the pixel distance from the center
-        # error_roll = msg.x   # Positive X error means target is to the right
         error_pitch = msg.y  # Positive Y error means target is below center
         error_yaw = msg.x    # Positive X error means target is to the right
 
         # Implementing Clamping for the integral term to prevent windup when the Device is near its physical limits.
-        # R_LIMIT_MIN = -45.0   
-        # R_LIMIT_MAX = 45.0
-        P_LIMIT_MIN = -90.0 
-        P_LIMIT_MAX = 0.0
-        Y_LIMIT_MIN = -360.0 
-        Y_LIMIT_MAX = 360.0
+        P_LIMIT_MIN = -89.0 
+        P_LIMIT_MAX = -1.0
         # Implementing Deadband for the error to prevent the controller from reacting to very small errors.
         MAX_SPEED =  100.0
         DEADBAND = 5.0 # pixels
@@ -141,35 +119,19 @@ class PIDControlNode(Node):
         is_pitch_blocked = False
         is_yaw_blocked = False
 
-        # --- ROLL (X-axis) PID Calculation ---
-        # if abs(error_roll) < DEADBAND: # Deadband
-        #     error_roll = 0.0
-        # p_roll = kp_roll * error_roll
-        # i_roll = ki_roll * self.integral_roll
-        # is_roll_blocked = (self.current_roll_angle <= R_LIMIT_MIN and error_roll < 0) or \
-        #                   (self.current_roll_angle >= R_LIMIT_MAX and error_roll > 0) or \
-        #                   (self.prev_control_roll >= MAX_SPEED and error_roll > 0) or \
-        #                   (self.prev_control_roll <= -MAX_SPEED and error_roll < 0)
-        # is_roll_blocked = False # for testing response with and without anti-windup logic
-        # if not is_roll_blocked: # Anti-windup
-        #     self.integral_roll += error_roll * dt
-        #     i_roll = ki_roll * self.integral_roll
-        # d_roll = kd_roll * ((error_roll - self.prev_error_roll) / dt)
-        # control_roll = p_roll + i_roll + d_roll
-
         # --- PITCH/TILT (Y-axis) PID Calculation ---
         if abs(error_pitch) < DEADBAND:
             error_pitch = 0.0
         p_pitch = kp_pitch * error_pitch
         i_pitch = ki_pitch * self.integral_pitch
         if anti_windup_enabled:
-            is_pitch_blocked = (self.current_pitch_angle <= P_LIMIT_MIN and error_pitch < 0) or \
-                                (self.current_pitch_angle >= P_LIMIT_MAX and error_pitch > 0) or \
+            is_pitch_blocked = (self.current_pitch_angle <= P_LIMIT_MIN and error_pitch > 0) or \
+                                (self.current_pitch_angle >= P_LIMIT_MAX and error_pitch < 0) or \
                                 (self.prev_control_pitch >= MAX_SPEED and error_pitch > 0) or \
                                 (self.prev_control_pitch <= -MAX_SPEED and error_pitch < 0)
         if not is_pitch_blocked:
             self.integral_pitch += error_pitch * dt
-        i_pitch = ki_pitch * self.integral_pitch
+            i_pitch = ki_pitch * self.integral_pitch
         d_pitch = kd_pitch * ((error_pitch - self.prev_error_pitch) / dt)
         control_pitch = p_pitch + i_pitch + d_pitch
 
@@ -179,27 +141,24 @@ class PIDControlNode(Node):
         p_yaw = kp_yaw * error_yaw
         i_yaw = ki_yaw * self.integral_yaw
         if anti_windup_enabled:
-            is_yaw_blocked = (self.current_yaw_angle <= Y_LIMIT_MIN and error_yaw < 0) or \
-                             (self.current_yaw_angle >= Y_LIMIT_MAX and error_yaw > 0) or \
-                             (self.prev_control_yaw >= MAX_SPEED and error_yaw > 0) or \
+            is_yaw_blocked = (self.prev_control_yaw >= MAX_SPEED and error_yaw > 0) or \
                              (self.prev_control_yaw <= -MAX_SPEED and error_yaw < 0)
         if not is_yaw_blocked:
             self.integral_yaw += error_yaw * dt
-        i_yaw = ki_yaw * self.integral_yaw
+            i_yaw = ki_yaw * self.integral_yaw
         d_yaw = kd_yaw * ((error_yaw - self.prev_error_yaw) / dt)
         control_yaw = p_yaw + i_yaw + d_yaw
 
         # Debugging output for anti-windup status (can be commented out during actual operation)
-        self.get_logger().info(f'Anti-Windup -> Pitch: {"Blocked" if is_pitch_blocked else "OK"}, Yaw: {"Blocked" if is_yaw_blocked else "OK"}')
+        # self.get_logger().info(f'Anti-Windup -> Pitch: {"Blocked" if is_pitch_blocked else "OK"}, Yaw: {"Blocked" if is_yaw_blocked else "OK"}')
+        # self.get_logger().info(f'integral_pitch: {self.integral_pitch:.2f}, integral_yaw: {self.integral_yaw:.2f}')
 
         # To avoid overshooting and to keep the control signal within reasonable limits, we can clamp the output to a maximum speed.
-        # control_roll = max(min(control_roll, MAX_SPEED), -MAX_SPEED)
         control_pitch = max(min(control_pitch, MAX_SPEED), -MAX_SPEED)
         control_yaw = max(min(control_yaw, MAX_SPEED), -MAX_SPEED)
 
         # Publish the control signal
         control_msg = Twist()
-        # control_msg.angular.x = control_roll
         control_msg.angular.y = control_pitch 
         control_msg.angular.z = control_yaw
         self.control_pub.publish(control_msg)
@@ -219,10 +178,8 @@ class PIDControlNode(Node):
         self.gains_pub.publish(msg_gains)
 
         # Update state for the next iteration
-        # self.prev_error_roll = error_roll
         self.prev_error_pitch = error_pitch
         self.prev_error_yaw = error_yaw
-        # self.prev_control_roll = control_roll
         self.prev_control_pitch = control_pitch
         self.prev_control_yaw = control_yaw
         self.last_time = current_time
@@ -238,7 +195,6 @@ class PIDControlNode(Node):
         if time_since_last_target > self.target_timeout and self.is_tracking:
             self.is_tracking = False
             # Resetting integral terms to prevent windup when no target is detected for a while.
-            # self.integral_roll = 0.0
             self.integral_pitch = 0.0
             self.integral_yaw = 0.0
             self.prev_error_pitch = 0.0

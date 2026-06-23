@@ -4,9 +4,9 @@ import os
 
 LOG_DIR = '/root/ros_workspace/test_logs'
 PDF_DIR = '/root/ros_workspace/test_plot_scripts/plots_pdf'
-FILE_OFF = os.path.join(LOG_DIR, 'anti_windup_off_1.csv')
-FILE_ON = os.path.join(LOG_DIR, 'anti_windup_on_1.csv')
-SAVE_PDF = False
+FILE_OFF = os.path.join(LOG_DIR, 'anti_windup_off_2.csv')
+FILE_ON = os.path.join(LOG_DIR, 'anti_windup_on_2.csv')
+SAVE_PDF = False  
 
 def get_unique_filename(base_path):
     if not os.path.exists(base_path):

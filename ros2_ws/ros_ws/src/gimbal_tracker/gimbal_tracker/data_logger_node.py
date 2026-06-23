@@ -102,9 +102,9 @@ class DataLoggerNode(Node):
             f"{self.integral_pitch:.4f}",
             f"{self.integral_yaw:.4f}",
             self.target_id,
-            f"{self.kp:.2f}",
-            f"{self.ki:.2f}",
-            f"{self.kd:.2f}"
+            f"{self.kp:.3f}",
+            f"{self.ki:.3f}",
+            f"{self.kd:.3f}"
         ])
 
     def destroy_node(self):

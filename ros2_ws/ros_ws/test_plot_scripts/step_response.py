@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
-LOG_FILE = '/root/ros_workspace/test_logs/step_response_1.csv'
+LOG_FILE = '/root/ros_workspace/test_logs/step_response_5.csv'
 PDF_DIR = '/root/ros_workspace/test_plot_scripts/plots_pdf'
 SHOW_CONTROL_PLOTS = False
 SAVE_PDF = False
@@ -58,7 +58,7 @@ def run_analysis_and_plot():
 
     rows = 2 if SHOW_CONTROL_PLOTS else 1
     fig, axes = plt.subplots(rows, 2, figsize=(12, 4 * rows), sharex=True, squeeze=False)
-    fig.suptitle(f"Analisi Risposta al Gradino\nKp={kp}, Ki={ki}, Kd={kd}", fontsize=14)
+    fig.suptitle(f"Analisi Risposta al Gradino a 4 metri di distanza\nKp={kp}, Ki={ki}, Kd={kd}", fontsize=14)
     os_yaw, ts_yaw, tau_yaw = calculate_metrics(data['time'], data['error_yaw'])
     os_pitch, ts_pitch, tau_pitch = calculate_metrics(data['time'], data['error_pitch'])
 
