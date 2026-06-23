@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-LOG_FILE = '/root/ros_workspace/test_logs/step_response_5.csv'
+LOG_FILE = '/root/ros_workspace/test_logs/step_response_13.csv'
 PDF_DIR = '/root/ros_workspace/test_plot_scripts/plots_pdf'
 SHOW_CONTROL_PLOTS = False
 SAVE_PDF = False
@@ -29,19 +29,13 @@ def calculate_euclidean_metrics(time, error):
     peak = after_max_error.min() if len(after_max_error) > 1 else 0.0
     
     os_percent = (peak / e0) * 100.0 if e0 != 0 else 0.0
-    
-    threshold_ts = 0.02 * e0
-    out_of_band = time[error < threshold_ts]
-    ts = out_of_band.iloc[-1] if not out_of_band.empty else time.iloc[-1]
 
     threshold_tau = 0.368 * e0
     tau_mask = error >= threshold_tau
     if tau_mask.any():
         tau = time[tau_mask].iloc[0] 
-    else:
-        tau = ts / 4.0 
         
-    return os_percent, ts, tau
+    return os_percent, tau
 
 def run_analysis_and_plot():
     raw_data = pd.read_csv(LOG_FILE)
@@ -60,9 +54,9 @@ def run_analysis_and_plot():
 
     rows = 2 if SHOW_CONTROL_PLOTS else 1
     fig, axes = plt.subplots(rows, 1, figsize=(10, 5 * rows), sharex=True, squeeze=False)
-    fig.suptitle(f"Analisi Risposta al Gradino (Euclidea)\nKp={kp:.2f}, Ki={ki:.2f}, Kd={kd:.2f}", fontsize=14)
+    fig.suptitle(f"Analisi Risposta al Gradino a 4 metri di distanza(Euclidea)\nKp={kp:.2f}, Ki={ki:.2f}, Kd={kd:.2f}", fontsize=14)
     
-    os_eucl, ts_eucl, tau_eucl = calculate_euclidean_metrics(data['time'], data['error_euclidean'])
+    os_eucl, tau_eucl = calculate_euclidean_metrics(data['time'], data['error_euclidean'])
 
     ax_err = axes[0, 0]
     ax_err.plot(data['time'], data['error_euclidean'], label='Errore Vettoriale (Pixel)', color='purple', linewidth=2)
@@ -73,12 +67,11 @@ def run_analysis_and_plot():
         ax_err.set_xlabel("Time (s)")
     ax_err.grid(True)
     
-    info_text = f'OS: {os_eucl:.1f}%\nTs(2%): {ts_eucl:.2f}s\nTau (τ): {tau_eucl:.2f}s'
+    info_text = f'OS: {os_eucl:.1f}%\nTau (τ): {tau_eucl:.2f}s'
     ax_err.text(0.95, 0.05, info_text,
                 transform=ax_err.transAxes, verticalalignment='bottom', horizontalalignment='right',
                 bbox=dict(boxstyle='round', facecolor='white', alpha=0.5))
                     
-    ax_err.axvline(x=ts_eucl, color='blue', linestyle='--', alpha=0.5, label='Ts (2%)')
     ax_err.axvline(x=tau_eucl, color='orange', linestyle=':', alpha=0.8, label='Tau (τ)')
     ax_err.legend()
 

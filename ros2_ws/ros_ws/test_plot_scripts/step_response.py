@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
-LOG_FILE = '/root/ros_workspace/test_logs/step_response_5.csv'
+LOG_FILE = '/root/ros_workspace/test_logs/step_response_12.csv'
 PDF_DIR = '/root/ros_workspace/test_plot_scripts/plots_pdf'
 SHOW_CONTROL_PLOTS = False
 SAVE_PDF = False
@@ -22,19 +22,13 @@ def calculate_metrics(time, error):
     
     peak = error.max()
     os_percent = (peak / abs(e0)) * 100 if peak > 0 else 0.0
-    
-    threshold_ts = 0.02 * abs(e0)
-    out_of_band = time[abs(error) > threshold_ts]
-    ts = out_of_band.iloc[-1] if not out_of_band.empty else time.iloc[-1]
 
     threshold_tau = 0.368 * abs(e0)
     tau_mask = abs(error) <= threshold_tau
     if tau_mask.any():
         tau = time[tau_mask].iloc[0] 
-    else:
-        tau = ts / 4.0 
         
-    return os_percent, ts, tau
+    return os_percent, tau
 
 def run_analysis_and_plot():
     raw_data = pd.read_csv(LOG_FILE)
@@ -59,18 +53,17 @@ def run_analysis_and_plot():
     rows = 2 if SHOW_CONTROL_PLOTS else 1
     fig, axes = plt.subplots(rows, 2, figsize=(12, 4 * rows), sharex=True, squeeze=False)
     fig.suptitle(f"Analisi Risposta al Gradino a 4 metri di distanza\nKp={kp}, Ki={ki}, Kd={kd}", fontsize=14)
-    os_yaw, ts_yaw, tau_yaw = calculate_metrics(data['time'], data['error_yaw'])
-    os_pitch, ts_pitch, tau_pitch = calculate_metrics(data['time'], data['error_pitch'])
+    os_yaw, tau_yaw = calculate_metrics(data['time'], data['error_yaw'])
+    os_pitch, tau_pitch = calculate_metrics(data['time'], data['error_pitch'])
 
     axes[0, 0].plot(data['time'], data['error_yaw'], label='Errore Pan', color='blue')
     axes[0, 0].axhline(0, color='red', linestyle='--')
     axes[0, 0].set_title("Risposta Pan")
     axes[0, 0].grid(True)
-    info_text_yaw = f'OS: {os_yaw:.1f}%\nTs(2%): {ts_yaw:.2f}s\nTau (τ): {tau_yaw:.2f}s'
+    info_text_yaw = f'OS: {os_yaw:.1f}%\nTau (τ): {tau_yaw:.2f}s'
     axes[0, 0].text(0.95, 0.05, info_text_yaw,
                     transform=axes[0, 0].transAxes, verticalalignment='bottom', horizontalalignment='right',
                     bbox=dict(boxstyle='round', facecolor='white', alpha=0.5))
-    axes[0, 0].axvline(x=ts_yaw, color='purple', linestyle='--', alpha=0.5, label='Ts (2%)')
     axes[0, 0].axvline(x=tau_yaw, color='orange', linestyle=':', alpha=0.8, label='Tau (τ)')
     axes[0, 0].legend()
 
@@ -78,11 +71,10 @@ def run_analysis_and_plot():
     axes[0, 1].axhline(0, color='red', linestyle='--')
     axes[0, 1].set_title("Risposta Tilt")
     axes[0, 1].grid(True)
-    info_text_pitch = f'OS: {os_pitch:.1f}%\nTs(2%): {ts_pitch:.2f}s\nTau (τ): {tau_pitch:.2f}s'
+    info_text_pitch = f'OS: {os_pitch:.1f}%\nTau (τ): {tau_pitch:.2f}s'
     axes[0, 1].text(0.95, 0.05, info_text_pitch,
                     transform=axes[0, 1].transAxes, verticalalignment='bottom', horizontalalignment='right',
                     bbox=dict(boxstyle='round', facecolor='white', alpha=0.5))
-    axes[0, 1].axvline(x=ts_pitch, color='purple', linestyle='--', alpha=0.5, label='Ts (2%)')
     axes[0, 1].axvline(x=tau_pitch, color='orange', linestyle=':', alpha=0.8, label='Tau (τ)')
     axes[0, 1].legend()
 

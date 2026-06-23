@@ -19,9 +19,9 @@ class PIDControlNode(Node):
         # ros2 param set /pid_controller kp_* <float_value>
         # ros2 param set /pid_controller ki_* <float_value>
         # ros2 param set /pid_controller kd_* <float_value>
-        self.declare_parameter('kp', 0.25) # Proportional gain 
-        self.declare_parameter('ki', 0.1) # Integral gain
-        self.declare_parameter('kd', 0.025) # Derivative gain
+        self.declare_parameter('kp', 0.2) # Proportional gain 
+        self.declare_parameter('ki', 0.01) # Integral gain
+        self.declare_parameter('kd', 0.02) # Derivative gain
         kp = self.get_parameter('kp').value
         ki = self.get_parameter('ki').value
         kd = self.get_parameter('kd').value
@@ -114,7 +114,7 @@ class PIDControlNode(Node):
         P_LIMIT_MAX = -1.0
         # Implementing Deadband for the error to prevent the controller from reacting to very small errors.
         MAX_SPEED =  100.0
-        DEADBAND = 5.0 # pixels
+        DEADBAND = 1.0 # pixels
 
         is_pitch_blocked = False
         is_yaw_blocked = False

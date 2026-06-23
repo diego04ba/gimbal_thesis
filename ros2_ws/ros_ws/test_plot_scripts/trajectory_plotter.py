@@ -6,7 +6,7 @@ from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 import matplotlib.image as mpimg
 import os
 
-LOG_FILE = '/root/ros_workspace/test_logs/multi_tracking_8.csv'
+LOG_FILE = '/root/ros_workspace/test_logs/multi_tracking_9.csv'
 IMG_DIR = '/root/ros_workspace/test_plot_scripts/marker_id'
 PDF_DIR = '/root/ros_workspace/test_plot_scripts/plots_pdf'
 ERROR_THRESHOLD = 15.0 # pixels
@@ -101,8 +101,8 @@ def plot_with_markers(filepath):
             ax.scatter(pos_x, pos_y, color='red', marker='*')
             ax.text(pos_x, pos_y + 3, f"ID {int(m_id)}", ha='center', fontsize=8)
 
-    ax.set_xlim(-150, -30)
-    ax.set_ylim(-90, -30)
+    ax.set_xlim(-110, -40)
+    ax.set_ylim(-60, -10)
     ax.set_xlabel("Pan [Degrees]")
     ax.set_ylabel("Tilt [Degrees]")
     ax.set_title("Traiettoria e Posizione Marker")

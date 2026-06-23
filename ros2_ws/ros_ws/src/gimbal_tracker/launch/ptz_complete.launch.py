@@ -11,11 +11,11 @@ password = 'pass'
 encrypted_password = 'true' # 'true' for digest auth, 'false' for basic auth (not recommended)
 
 testing = False # Set to True for testing
-# test_name = 'test'
+test_name = 'test'
 # test_name = 'step_response'
 # test_name = 'anti_windup_off' 
 # test_name = 'anti_windup_on' 
-test_name = 'multi_tracking' 
+# test_name = 'multi_tracking' 
 
 # ros2 launch gimbal_tracker ptz_complete.launch.py 2>&1 | grep -v "sequence size exceeds remaining buffer"
 
@@ -36,7 +36,7 @@ def generate_launch_description():
         executable='aruco_detector', 
         name='aruco_detector',
         output='screen',
-        parameters=[{'resize_factor': 1.0, 'queue_size': 4, 'follow_time': 10.0}] # queue_size 0 means the aruco detector locks onto the first marker detected.
+        parameters=[{'resize_factor': 1.0, 'queue_size': 0, 'follow_time': 10.0}] # queue_size 0 means the aruco detector locks onto the first marker detected.
     )
 
     # PID Controller for PTZ movement
