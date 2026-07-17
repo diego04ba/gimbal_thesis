@@ -1,6 +1,6 @@
 # Target Tracking System (ROS2)
 
-This project implements a real-time automated target tracking system based on ROS2 Humble. The system integrates industrial computer vision and PID control to enable a 2-axis gimbal to follow a visual reference (ArUco Marker).
+This project implements a low-latency automated target pointing system based on ROS2 Humble. The system integrates industrial computer vision and PID control to enable a 2-axis PTZ Camera to aim a visual reference (ArUco Marker).
 **Note**: The project initially utilized a FLIR camera and a separate gimbal stabilizer. However, due to hardware limitations, it has been transitioned to a fully integrated PTZ (Pan-Tilt-Zoom) camera system.
 
 ## System Overview
