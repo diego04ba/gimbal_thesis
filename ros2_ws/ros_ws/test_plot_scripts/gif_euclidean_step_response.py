@@ -2,11 +2,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+from matplotlib.animation import FuncAnimation, PillowWriter
 
-LOG_FILE = '/root/ros_workspace/test_logs/step_response_13.csv'
+LOG_FILE = '/root/ros_workspace/test_logs/step_response_12.csv'
 PDF_DIR = '/root/ros_workspace/test_plot_scripts/plots_pdf'
+GIF_DIR = '/root/ros_workspace/test_plot_scripts/plots_gif'
+MP4_DIR = '/root/ros_workspace/test_plot_scripts/plots_mp4'
 SHOW_CONTROL_PLOTS = False
-SAVE_PDF = True
+SAVE_PDF = False
+SAVE_GIF = True
+SAVE_MP4 = True
 MAX_PLOT_TIME = 3.0
 
 def real_gains(data):
@@ -69,18 +74,31 @@ def run_analysis_and_plot():
     else:
         data['error_euclidean'] = 0.0
 
+    limit_time = MAX_PLOT_TIME if MAX_PLOT_TIME is not None else data['time'].iloc[-1]
+    plot_data = data[data['time'] <= limit_time]
+    
+    total_frames = len(plot_data)
+    duration_sec = plot_data['time'].iloc[-1]
+    fps = total_frames / duration_sec if duration_sec > 0 else 10
+
     rows = 2 if SHOW_CONTROL_PLOTS else 1
-    fig, axes = plt.subplots(rows, 1, figsize=(10, 5 * rows), sharex=True, squeeze=False) # x * 100, y * 100
-    fig.suptitle(f"Analisi Risposta al Gradino a 2 metri di distanza (Risposta Combinata)\nKp={kp:.2f}, Ki={ki:.2f}, Kd={kd:.2f}", fontsize=14)
+    fig, axes = plt.subplots(rows, 1, figsize=(8, 4.5 * rows), sharex=True, squeeze=False) # x * 100, y * 100
+    fig.suptitle(f"Analisi Risposta al Gradino a 4 metri di distanza (Risposta Combinata)\nKp={kp:.2f}, Ki={ki:.2f}, Kd={kd:.2f}", fontsize=14)
     
     os_eucl, tau_eucl = calculate_euclidean_metrics(data['time'], data['error_euclidean'])
 
     ax_err = axes[0, 0]
-    ax_err.plot(data['time'], data['error_euclidean'], label='Errore Vettoriale (Pixel)', color='purple', linewidth=2)
+    line_err, = ax_err.plot([], [], label='Errore Vettoriale (Pixel)', color='purple', linewidth=2)
     ax_err.axhline(0, color='red', linestyle='--')
     ax_err.set_title("Risposta Combinata (Pan + Tilt)")
     ax_err.set_ylabel("Distanza dal Centro [Pixel]")
-    ax_err.set_xlim(0, MAX_PLOT_TIME)
+    ax_err.set_xlim(0, limit_time)
+    
+    y_min = data['error_euclidean'].min()
+    y_max = data['error_euclidean'].max()
+    padding = abs(y_max - y_min) * 0.1
+    ax_err.set_ylim(y_min - padding, y_max + padding)
+
     if not SHOW_CONTROL_PLOTS:
         ax_err.set_xlabel("Time (s)")
     ax_err.grid(True)
@@ -93,16 +111,34 @@ def run_analysis_and_plot():
     ax_err.axvline(x=tau_eucl, color='orange', linestyle=':', alpha=0.8, label='Tau (τ)')
     ax_err.legend()
 
+    lines = [line_err]
+
     if SHOW_CONTROL_PLOTS:
         ax_ctrl = axes[1, 0]
-        ax_ctrl.plot(data['time'], data['control_yaw'], color='cyan', label='Controllo Pan')
-        ax_ctrl.plot(data['time'], data['control_pitch'], color='orange', label='Controllo Tilt')
+        line_yaw, = ax_ctrl.plot([], [], color='cyan', label='Controllo Pan')
+        line_pitch, = ax_ctrl.plot([], [], color='orange', label='Controllo Tilt')
         ax_ctrl.set_title("Segnali di Controllo (Output PID)")
         ax_ctrl.set_ylabel("Speed")
         ax_ctrl.set_xlabel("Time (s)")
-        ax_ctrl.set_xlim(0, MAX_PLOT_TIME)
+        ax_ctrl.set_xlim(0, limit_time)
+        
+        c_min = min(data['control_yaw'].min(), data['control_pitch'].min())
+        c_max = max(data['control_yaw'].max(), data['control_pitch'].max())
+        c_padding = abs(c_max - c_min) * 0.1
+        ax_ctrl.set_ylim(c_min - c_padding, c_max + c_padding)
+        
         ax_ctrl.grid(True)
         ax_ctrl.legend()
+        lines.extend([line_yaw, line_pitch])
+
+    def update(frame):
+        line_err.set_data(plot_data['time'].iloc[:frame], plot_data['error_euclidean'].iloc[:frame])
+        if SHOW_CONTROL_PLOTS:
+            line_yaw.set_data(plot_data['time'].iloc[:frame], plot_data['control_yaw'].iloc[:frame])
+            line_pitch.set_data(plot_data['time'].iloc[:frame], plot_data['control_pitch'].iloc[:frame])
+        return lines
+
+    ani = FuncAnimation(fig, update, frames=total_frames, interval=1000/fps, blit=True, repeat=False)
 
     plt.tight_layout(rect=[0, 0, 1, 0.96])
     
@@ -112,6 +148,20 @@ def run_analysis_and_plot():
         name_no_ext = os.path.splitext(base_name)[0]
         pdf_filename = os.path.join(PDF_DIR, f"euclidean_{name_no_ext}.pdf")
         plt.savefig(pdf_filename, dpi=300)
+    
+    if SAVE_GIF:
+        os.makedirs(GIF_DIR, exist_ok=True)
+        base_name = os.path.basename(LOG_FILE)
+        name_no_ext = os.path.splitext(base_name)[0]
+        gif_filename = os.path.join(GIF_DIR, f"euclidean_{name_no_ext}.gif")
+        ani.save(gif_filename, writer=PillowWriter(fps=fps))
+
+    if SAVE_MP4:
+        os.makedirs(MP4_DIR, exist_ok=True)
+        base_name = os.path.basename(LOG_FILE)
+        name_no_ext = os.path.splitext(base_name)[0]
+        mp4_filename = os.path.join(MP4_DIR, f"euclidean_{name_no_ext}.mp4")
+        ani.save(mp4_filename, writer='ffmpeg', fps=fps, dpi=120)
         
     plt.show()
 

@@ -4,14 +4,21 @@ import numpy as np
 from matplotlib.collections import LineCollection
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 import matplotlib.image as mpimg
+from matplotlib.animation import FuncAnimation, PillowWriter
 import os
 
 LOG_FILE = '/root/ros_workspace/test_logs/multi_tracking_9.csv'
 IMG_DIR = '/root/ros_workspace/test_plot_scripts/marker_id'
 PDF_DIR = '/root/ros_workspace/test_plot_scripts/plots_pdf'
-ERROR_THRESHOLD = 15.0 # pixels
-STABILITY_TIME = 0.5 # seconds
+GIF_DIR = '/root/ros_workspace/test_plot_scripts/plots_gif'
+MP4_DIR = '/root/ros_workspace/test_plot_scripts/plots_mp4'
+
+ERROR_THRESHOLD = 15.0 
+STABILITY_TIME = 0.5 
+
 SAVE_PDF = False
+SAVE_GIF = False
+SAVE_MP4 = True
 
 zoom_level = 0.03  
 y_offset = -7.0
@@ -38,7 +45,6 @@ def find_marker_positions(df):
 
 def plot_with_markers(filepath):
     if not os.path.exists(filepath):
-        print(f"Error: File {filepath} not found.")
         return
 
     data = pd.read_csv(filepath)
@@ -48,10 +54,10 @@ def plot_with_markers(filepath):
     
     fig, ax = plt.subplots(figsize=(9, 9)) # x * 100, y * 100
     
-    # Linea gradiente
     x, y, t = data['angle_yaw'].values, data['angle_pitch'].values, data['time'].values
     segments = []
     t_segments = []
+    
     for i in range(len(x) - 1):
         x0, y0, t0 = x[i], y[i], t[i]
         x1, y1, t1 = x[i+1], y[i+1], t[i+1]
@@ -82,11 +88,6 @@ def plot_with_markers(filepath):
     segments = np.array(segments)
     t_segments = np.array(t_segments)
     
-    norm = plt.Normalize(t.min(), t.max())
-    lc = LineCollection(segments, cmap='viridis', norm=norm, linewidth=2)
-    lc.set_array(t_segments)
-    ax.add_collection(lc)
-    
     for m_id, (pos_x, pos_y) in marker_positions.items():
         img_name = f"marker_id_{int(m_id)}.png"
         img_path = os.path.join(IMG_DIR, img_name)
@@ -107,17 +108,46 @@ def plot_with_markers(filepath):
     ax.set_ylabel("Tilt [Degrees]")
     ax.set_title("Traiettoria e Posizione Marker")
     ax.grid(True, linestyle='--', alpha=0.6)
-    
+
+    norm = plt.Normalize(t.min(), t.max())
+    lc = LineCollection([], cmap='viridis', norm=norm, linewidth=2)
+    ax.add_collection(lc)
+
+    total_frames = len(segments)
+    duration_sec = t[-1] if len(t) > 0 else 1.0
+    fps = total_frames / duration_sec if duration_sec > 0 else 10
+
+    def update(frame):
+        if frame > 0:
+            lc.set_segments(segments[:frame])
+            lc.set_array(t_segments[:frame])
+        return [lc]
+
+    ani = FuncAnimation(fig, update, frames=total_frames, interval=1000/fps, blit=False, repeat=False)
+
     if SAVE_PDF:
         os.makedirs(PDF_DIR, exist_ok=True)
         base_name = os.path.basename(filepath)
         name_no_ext = os.path.splitext(base_name)[0]
         pdf_filename = os.path.join(PDF_DIR, f"trajectory_{name_no_ext}.pdf")
         plt.savefig(pdf_filename, dpi=300, bbox_inches='tight')
+
+    if SAVE_GIF:
+        os.makedirs(GIF_DIR, exist_ok=True)
+        base_name = os.path.basename(filepath)
+        name_no_ext = os.path.splitext(base_name)[0]
+        gif_filename = os.path.join(GIF_DIR, f"trajectory_{name_no_ext}.gif")
+        ani.save(gif_filename, writer=PillowWriter(fps=fps))
+
+    if SAVE_MP4:
+        os.makedirs(MP4_DIR, exist_ok=True)
+        base_name = os.path.basename(filepath)
+        name_no_ext = os.path.splitext(base_name)[0]
+        mp4_filename = os.path.join(MP4_DIR, f"trajectory_{name_no_ext}.mp4")
+        ani.save(mp4_filename, writer='ffmpeg', fps=fps, dpi = 120)
+
     plt.show()
 
 if __name__ == "__main__":
     if os.path.exists(LOG_FILE):
         plot_with_markers(LOG_FILE)
-    else:
-        print(f"Log file {LOG_FILE} does not exist.")

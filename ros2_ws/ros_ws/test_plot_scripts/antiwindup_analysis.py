@@ -25,14 +25,27 @@ def get_unique_filename(base_path):
 
 def load_and_preprocess(filepath):
     df = pd.read_csv(filepath)
-    df['time'] = df['time'] - df['time'].iloc[0]
+    mask = df['error_pitch'] != 0
+    if mask.any():
+        offset = df.loc[mask, 'time'].iloc[0] - 2.0
+        df['time'] = df['time'] - offset
+    else:
+        df['time'] = df['time'] - df['time'].iloc[0]
+    
+    df = df[df['time'] >= 0].reset_index(drop=True)
+    
+    if not df.empty and df['time'].iloc[0] > 0:
+        first_row = df.iloc[[0]].copy()
+        first_row['time'] = 0.0
+        df = pd.concat([first_row, df]).reset_index(drop=True)
+        
     return df
 
 def plot_comparison():
     data_off = load_and_preprocess(FILE_OFF)
     data_on = load_and_preprocess(FILE_ON)
 
-    fig, axes = plt.subplots(3, 2, figsize=(14, 12), sharex=True)
+    fig, axes = plt.subplots(3, 2, figsize=(14, 12), sharex=True, sharey="row") 
     fig.suptitle('Confronto Anti-Windup: Tilt Axis (Saturazione)', fontsize=16, fontweight='bold')
 
     axes[0, 0].plot(data_off['time'], data_off['error_pitch'], color='red', label='Error (OFF)')
@@ -67,6 +80,7 @@ def plot_comparison():
     axes[2, 1].set_xlabel("Time (s)")
 
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+
     if SAVE_PDF:
         os.makedirs(PDF_DIR, exist_ok=True)
         base_pdf_path = os.path.join(PDF_DIR, "confronto_antiwindup.pdf")
